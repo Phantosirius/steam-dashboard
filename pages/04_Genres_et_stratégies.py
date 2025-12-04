@@ -26,36 +26,25 @@ st.markdown("---")
 
 
 # =========================================================
-# 🔥 1. CHARGEMENT DES DONNÉES — VIA GOOGLE DRIVE
+# CHARGEMENT DU FICHIER LOCAL
 # =========================================================
 
-URL_GAMES_CLEAN = "https://drive.google.com/uc?export=download&id=1qbrm-9C9PQ861r6D0-M03HFU036iOjNS"
+PATH_GAMES_CLEAN = "data/games_clean.csv"
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv(URL_GAMES_CLEAN)
+    df = pd.read_csv(PATH_GAMES_CLEAN)
 
-    df["Genres"] = df["Genres"].fillna("")
-    df["Name"] = df["Name"].fillna("Unknown")
-
-    # Restriction : cohérence avec toutes les pages
-    df = df[df["Release_year"].between(2014, 2024)]
-
-    # Sécurité total reviews
+    # Sécurité
     if "Total_reviews" not in df.columns:
-        df["Positive"] = df["Positive"].fillna(0).astype(int)
-        df["Negative"] = df["Negative"].fillna(0).astype(int)
         df["Total_reviews"] = df["Positive"] + df["Negative"]
 
-    # Sécurité ratio
     if "Ratio_Positive" not in df.columns:
         df["Ratio_Positive"] = df["Positive"] / df["Total_reviews"].replace(0, 1)
 
-    return df
+    return df[df["Release_year"].between(2014, 2024)]
 
 df = load_data()
-st.success("Dataset chargé depuis Google Drive ✔")
-
 # =========================================================
 # 2. PRÉPARATION DES GENRES
 # =========================================================

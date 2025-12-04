@@ -46,26 +46,26 @@ st.markdown("""
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# CHARGEMENT DES DONNÉES — VIA GOOGLE DRIVE
-# ---------------------------------------------------------
+# =========================================================
+# CHARGEMENT DU FICHIER LOCAL
+# =========================================================
 
-URL_GAMES_CLEAN = "https://drive.google.com/uc?export=download&id=1qbrm-9C9PQ861r6D0-M03HFU036iOjNS"
+PATH_GAMES_CLEAN = "data/games_clean.csv"
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv(URL_GAMES_CLEAN)
+    df = pd.read_csv(PATH_GAMES_CLEAN)
 
-    df["Total_reviews"] = df["Positive"] + df["Negative"]
-    df["Ratio_Positive"] = df["Positive"] / df["Total_reviews"].replace(0, 1)
+    # Sécurité
+    if "Total_reviews" not in df.columns:
+        df["Total_reviews"] = df["Positive"] + df["Negative"]
 
-    # restriction de l’étude (cohérence avec la page marché global)
-    df = df[df["Release_year"].between(2014, 2024)]
+    if "Ratio_Positive" not in df.columns:
+        df["Ratio_Positive"] = df["Positive"] / df["Total_reviews"].replace(0, 1)
 
-    return df
+    return df[df["Release_year"].between(2014, 2024)]
 
 df = load_data()
-st.caption("Jeux pris en compte : toutes les entrées entre 2014 et 2024.")
 
 # ---------------------------------------------------------
 # FIX DES DOUBLONS RAINBOW / GTA / ETC.

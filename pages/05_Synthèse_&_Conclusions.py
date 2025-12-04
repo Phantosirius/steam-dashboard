@@ -21,20 +21,25 @@ st.markdown("""
 st.markdown("---")
 
 # =========================================================
-# 🔥 CHARGEMENT DES DONNÉES VIA GOOGLE DRIVE
+# CHARGEMENT DU FICHIER LOCAL
 # =========================================================
 
-URL_GAMES_CLEAN = "https://drive.google.com/uc?export=download&id=1qbrm-9C9PQ861r6D0-M03HFU036iOjNS"
+PATH_GAMES_CLEAN = "data/games_clean.csv"
 
-df = pd.read_csv(URL_GAMES_CLEAN)
+@st.cache_data
+def load_data():
+    df = pd.read_csv(PATH_GAMES_CLEAN)
 
-# sécurités
-df["Total_reviews"] = df.get("Total_reviews", df["Positive"] + df["Negative"])
-df["Ratio_Positive"] = df.get("Ratio_Positive", df["Positive"] / df["Total_reviews"].replace(0, 1))
+    # Sécurité
+    if "Total_reviews" not in df.columns:
+        df["Total_reviews"] = df["Positive"] + df["Negative"]
 
-# cohérence 2014–2024
-df = df[df["Release_year"].between(2014, 2024)]
+    if "Ratio_Positive" not in df.columns:
+        df["Ratio_Positive"] = df["Positive"] / df["Total_reviews"].replace(0, 1)
 
+    return df[df["Release_year"].between(2014, 2024)]
+
+df = load_data()
 # =========================================================
 # INTRO
 # =========================================================
