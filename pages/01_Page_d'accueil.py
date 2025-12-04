@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import requests
-from io import StringIO
+from io import BytesIO
 
 # --------------------------------------
 # Configuration générale
@@ -62,34 +62,29 @@ URL_GAMES_CLEAN = "https://github.com/Phantosirius/steam-dashboard/releases/down
 
 
 # =========================================================
-# 🚀 FONCTION STREAMING : LIRE SEULEMENT LES PREMIÈRES LIGNES
+# Fonction optimisée : lecture BINAIRE & PARTIELLE
 # =========================================================
-def load_preview_csv(url, preview_rows=15):
+def load_partial_csv_github(url, nrows=20):
     """
-    Télécharge uniquement les premières lignes d’un CSV massif via un stream.
-    Cela évite de charger 300 Mo en mémoire (limitations Streamlit Cloud).
+    Lecture partielle (3 Mo max) d’un CSV volumineux à partir d’un fichier GitHub Release.
+    Compatible Streamlit Cloud.
     """
     try:
-        with requests.get(url, stream=True) as r:
-            r.raise_for_status()
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
 
-            lines = []
-            for i, line in enumerate(r.iter_lines(decode_unicode=True)):
-                if i > preview_rows:  # on arrête tôt = rapide
-                    break
-                lines.append(line)
+        # lecture binaire (3 Mo max)
+        chunk = response.raw.read(3_000_000)
 
-        csv_data = "\n".join(lines)
-        return pd.read_csv(StringIO(csv_data))
+        return pd.read_csv(BytesIO(chunk), nrows=nrows)
 
     except Exception as e:
-        raise RuntimeError(f"Erreur lors du chargement streaming : {e}")
+        raise RuntimeError(f"Erreur de chargement binaire GitHub : {e}")
 
 
 @st.cache_data
-def cached_preview(url):
-    return load_preview_csv(url)
-
+def preview_dataset(url):
+    return load_partial_csv_github(url, nrows=20)
 
 
 # --------------------------------------
@@ -100,6 +95,7 @@ st.markdown(
     "<p class='small-note'>Étude interactive du marché vidéoludique sur dix années d’évolution.</p>",
     unsafe_allow_html=True
 )
+
 st.markdown("<hr>", unsafe_allow_html=True)
 
 
@@ -123,33 +119,33 @@ st.markdown("<div class='section-title'>Datasets utilisés</div>", unsafe_allow_
 
 st.markdown("""
 <div class="block">
-Les données proviennent du dataset Kaggle :  
+L’application repose sur les données du dataset Kaggle :  
 <a class='link' href="https://www.kaggle.com/datasets/fronkongames/steam-games-dataset/data">
 Steam Games Dataset
 </a>
 
 <br><br>
-Transformation des fichiers :
+Les étapes de transformation expliquent le passage :
 <ul>
-<li>Dataset brut : <code>games.csv</code></li>
-<li>Dataset corrigé : <code>games_fixed.csv</code></li>
-<li>Dataset final nettoyé : <code>games_clean.csv</code></li>
+<li>du dataset brut (<code>games.csv</code>)</li>
+<li>au dataset corrigé (<code>games_fixed.csv</code>)</li>
+<li>au dataset final utilisé (<code>games_clean.csv</code>)</li>
 </ul>
 </div>
 """, unsafe_allow_html=True)
 
 
 # =========================================================
-# Aperçu léger des datasets
+# Aperçu interactif des datasets (lecture légère)
 # =========================================================
 def display_preview(url, title):
     try:
-        df = cached_preview(url)
+        df = preview_dataset(url)
         st.write(f"### {title}")
         st.dataframe(df, use_container_width=True)
-        st.caption("Aperçu limité (lecture streaming, ultra-rapide).")
+        st.caption("Aperçu limité aux premières lignes (lecture partielle du fichier).")
     except Exception as e:
-        st.error(str(e))
+        st.error(f"Erreur : {e}")
 
 
 col1, col2, col3 = st.columns(3)
@@ -175,33 +171,33 @@ st.markdown("<hr>", unsafe_allow_html=True)
 # =========================================================
 st.markdown("<div class='section-title'>Structure du dataset final</div>", unsafe_allow_html=True)
 
-# lecture super légère : on stream seulement 15 lignes
-df_cols = cached_preview(URL_GAMES_CLEAN)
+# 👉 Lecture ultra légère pour récupérer uniquement les colonnes
+cols = preview_dataset(URL_GAMES_CLEAN).columns.tolist()
 
 with st.expander("Liste des colonnes"):
-    st.write(df_cols.columns.tolist())
+    st.write(cols)
 
 with st.expander("Description des colonnes"):
     descriptions = {
-        "AppID": "Identifiant Steam.",
+        "AppID": "Identifiant unique du jeu.",
         "Name": "Nom du jeu.",
-        "Release_date": "Date précise.",
-        "Release_year": "Année.",
+        "Release_date": "Date de sortie.",
+        "Release_year": "Année de sortie.",
         "Developer": "Développeur.",
         "Publisher": "Éditeur.",
         "Positive": "Avis positifs.",
         "Negative": "Avis négatifs.",
-        "Total_reviews": "Avis totaux.",
-        "Ratio_Positive": "% d’avis positifs.",
+        "Total_reviews": "Total des avis.",
+        "Ratio_Positive": "Pourcentage d’avis positifs.",
         "Genres": "Genres bruts.",
         "Genres_list": "Genres nettoyés.",
         "Tags": "Tags Steam.",
-        "Price": "Prix du jeu.",
+        "Price": "Prix initial.",
         "Discount": "Réduction.",
         "DLC_count": "Nombre de DLC.",
-        "Windows": "Disponible sur Windows.",
-        "Mac": "Disponible sur Mac.",
-        "Linux": "Disponible sur Linux."
+        "Windows": "Compatibilité Windows.",
+        "Mac": "Compatibilité Mac.",
+        "Linux": "Compatibilité Linux."
     }
     st.write(pd.DataFrame.from_dict(descriptions, orient="index", columns=["Description"]))
 
@@ -220,12 +216,12 @@ with colA:
     st.markdown("""
 <div class='block'>
 <strong>Marché global</strong><br>
-Évolution des sorties de jeux et dynamique du marché.
+Analyse des sorties annuelles et dynamique globale du marché.
 </div>
 
 <div class='block'>
 <strong>Jeux populaires</strong><br>
-Classement des jeux les plus influents.
+Identification des leaders du marché selon les avis.
 </div>
 """, unsafe_allow_html=True)
 
@@ -233,12 +229,12 @@ with colB:
     st.markdown("""
 <div class='block'>
 <strong>Genres & stratégie</strong><br>
-Analyse croisée popularité × qualité × croissance.
+Analyse croisée (qualité × popularité × croissance).
 </div>
 
 <div class='block'>
-<strong>Recommandations</strong><br>
-Moteur de similarité pour proposer des jeux proches.
+<strong>Recommandations finales</strong><br>
+Synthèse stratégique complète.
 </div>
 """, unsafe_allow_html=True)
 
