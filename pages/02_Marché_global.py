@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import requests
+from io import BytesIO
 
 # =========================================================
 # CONFIGURATION
@@ -8,7 +10,7 @@ import plotly.express as px
 st.set_page_config(page_title="Marché global — Steam 2014–2024", page_icon="📈", layout="wide")
 
 # ---------------------------------------------------------
-# CSS pour harmoniser la page
+# CSS
 # ---------------------------------------------------------
 st.markdown("""
 <style>
@@ -37,6 +39,45 @@ h1 {
 """, unsafe_allow_html=True)
 
 # =========================================================
+# 🔗 URL GitHub Release du dataset propre
+# =========================================================
+URL_GAMES_CLEAN = "https://github.com/Phantosirius/steam-dashboard/releases/download/v1.0/games_clean.csv"
+
+
+# =========================================================
+# Fonction de chargement ROBUSTE (lecture binaire complète)
+# =========================================================
+@st.cache_data
+def load_full_clean_dataset():
+    """
+    Charge TOUT le fichier games_clean.csv depuis GitHub Release.
+    Le fichier fait ~300 Mo, donc on utilise la lecture binaire.
+    """
+    try:
+        response = requests.get(URL_GAMES_CLEAN, stream=True)
+        response.raise_for_status()
+
+        content = response.content  # récupération binaire
+        df = pd.read_csv(BytesIO(content))
+
+        # Sécurité si certaines colonnes manquent
+        if "Total_reviews" not in df.columns:
+            df["Total_reviews"] = df["Positive"] + df["Negative"]
+
+        if "Ratio_Positive" not in df.columns:
+            df["Ratio_Positive"] = df["Positive"] / df["Total_reviews"].replace(0, 1)
+
+        # Filtre sur 2014–2024
+        return df[df["Release_year"].between(2014, 2024)]
+
+    except Exception as e:
+        st.error(f"Erreur lors du chargement du dataset : {e}")
+        return pd.DataFrame()
+
+df = load_full_clean_dataset()
+
+
+# =========================================================
 # TITRE
 # =========================================================
 st.markdown("""
@@ -48,26 +89,6 @@ st.markdown("""
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
-# =========================================================
-# CHARGEMENT DES DONNÉES — via Google Drive
-# =========================================================
-
-URL_GAMES_CLEAN = "https://drive.google.com/uc?export=download&id=1qbrm-9C9PQ861r6D0-M03HFU036iOjNS"
-
-@st.cache_data
-def load_data():
-    df = pd.read_csv(URL_GAMES_CLEAN)
-
-    # Sécurité si certaines colonnes manquent
-    if "Total_reviews" not in df.columns:
-        df["Total_reviews"] = df["Positive"] + df["Negative"]
-
-    if "Ratio_Positive" not in df.columns:
-        df["Ratio_Positive"] = df["Positive"] / df["Total_reviews"].replace(0, 1)
-
-    return df[df["Release_year"].between(2014, 2024)]
-
-df = load_data()
 
 # =========================================================
 # STATISTIQUES PRINCIPALES
@@ -106,8 +127,9 @@ with colC:
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
+
 # =========================================================
-# SECTION — ÉVOLUTION DES SORTIES
+# ÉVOLUTION DES SORTIES
 # =========================================================
 st.markdown("<div class='section-title'>Évolution des sorties annuelles</div>", unsafe_allow_html=True)
 
@@ -134,14 +156,15 @@ delta = count_year["AppID"].iloc[-1] - count_year["AppID"].iloc[0]
 pct = (delta / count_year["AppID"].iloc[0]) * 100
 
 st.info(
-    f"Entre 2014 et 2024, le nombre annuel de sorties augmente de **{pct:.1f}%**, "
+    f"Entre 2014 et 2024, le nombre de sorties augmente de **{pct:.1f}%**, "
     f"passant de **{count_year['AppID'].iloc[0]:,}** à **{count_year['AppID'].iloc[-1]:,}** jeux."
 )
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
+
 # =========================================================
-# SECTION — DISTRIBUTION DES PRIX
+# DISTRIBUTION DES PRIX
 # =========================================================
 st.markdown("<div class='section-title'>Distribution des prix</div>", unsafe_allow_html=True)
 
@@ -170,8 +193,9 @@ st.warning(f"Les jeux gratuits représentent **{free_pct:.1f}%** du marché.")
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
+
 # =========================================================
-# SECTION — PRIX MÉDIAN PAR ANNÉE
+# PRIX MÉDIAN PAR ANNÉE
 # =========================================================
 st.markdown("<div class='section-title'>Évolution du prix médian</div>", unsafe_allow_html=True)
 
@@ -198,18 +222,16 @@ st.info(f"Le prix médian moyen entre 2014 et 2024 est de **{median_price['Price
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
+
 # =========================================================
 # SYNTHÈSE
 # =========================================================
 st.markdown("<div class='section-title'>Synthèse du marché Steam</div>", unsafe_allow_html=True)
 
 st.markdown("""
-- Croissance nette du nombre de jeux publiés → marché toujours plus compétitif.  
-- Prix globalement bas → influence du free-to-play et des petits jeux indépendants.  
-- Production massive → visibilité réduite pour les nouveaux entrants.  
-
-Ces éléments posent le cadre général. Vous pouvez maintenant explorer  
-les jeux les plus populaires pour comprendre la demande réelle.
+- Forte explosion du nombre de sorties → concurrence accrue.  
+- Prix globalement bas → domination de l’indie + free-to-play.  
+- Marché très volatil → visibilité plus difficile à obtenir pour les petits studios.  
 """)
 
 col1, col2 = st.columns(2)
