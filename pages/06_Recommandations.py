@@ -1,0 +1,355 @@
+import os
+import re
+import numpy as np
+import pandas as pd
+import streamlit as st
+import plotly.express as px
+
+# =========================================================
+# CONFIG STREAMLIT
+# =========================================================
+st.set_page_config(
+    page_title="Recommandations — Steam",
+    page_icon="🎮",
+    layout="wide"
+)
+
+st.markdown("""
+<div style="text-align:center; padding: 10px 0 20px 0;">
+    <h1 style="color:#9b59b6;">Recommandations de jeux</h1>
+    <h3 style="color:#bdc3c7;">Sélectionnez un jeu et découvrez des titres proches dans la même famille</h3>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("---")
+
+DATA_DIR = "data"
+FILE = os.path.join(DATA_DIR, "games_clean.csv")
+
+# =========================================================
+# OUTILS GENRES
+# =========================================================
+def safe_parse_genres(x):
+    if isinstance(x, list):
+        return x
+    if not isinstance(x, str) or x.strip() == "":
+        return []
+    s = x.strip()
+    # cas liste python "[...]" avec quotes
+    if s.startswith("[") and s.endswith("]"):
+        items = re.findall(r"'(.*?)'|\"(.*?)\"", s)
+        return [a or b for (a, b) in items if (a or b)]
+    # cas séparateurs texte
+    tokens = re.split(r"[,;/|]", s)
+    return [t.strip() for t in tokens if t.strip()]
+
+
+def normalize_genre(g):
+    if not isinstance(g, str):
+        return None
+    s = g.strip()
+    if s == "":
+        return None
+    return s.title()
+
+
+# =========================================================
+# 1. CHARGEMENT + NETTOYAGE
+# =========================================================
+@st.cache_data
+def load_cleaned_data():
+    df = pd.read_csv(FILE)
+
+    df["Name"] = df["Name"].fillna("Unknown")
+    df["Genres"] = df["Genres"].fillna("")
+    df["Positive"] = df["Positive"].fillna(0).astype(int)
+    df["Negative"] = df["Negative"].fillna(0).astype(int)
+
+    df["Total_reviews"] = df["Positive"] + df["Negative"]
+    df["Ratio_Positive"] = df["Positive"] / df["Total_reviews"].replace(0, 1)
+
+    # parsing genres
+    df["Genres_list"] = df["Genres"].apply(safe_parse_genres)
+    df["Genres_list"] = df["Genres_list"].apply(
+        lambda lst: [normalize_genre(g) for g in lst if normalize_genre(g)]
+    )
+
+    # ---------- FILTRE NSFW FORT ----------
+    NSFW_PATTERNS = [
+        "sex", "sexual", "adult", "hentai", "nsfw", "erotic", "porn",
+        "pussy", "boob", "dick", "naked", "nude", "orgasm",
+        "futa", "fetish", "milf", "bdsm", "bondage", "deepthroat",
+        "sperm", "vagina", "cum", "penetrat", "tits", "stripper"
+    ]
+
+    def is_nsfw(row):
+        txt = (str(row["Name"]) + " " + str(row["Genres"])).lower()
+        return any(k in txt for k in NSFW_PATTERNS)
+
+    df = df[~df.apply(is_nsfw, axis=1)]
+
+    # jeux quasi inconnus → on enlève
+    df = df[df["Total_reviews"] >= 50]
+
+    # trop de genres = souvent du flood
+    df = df[df["Genres_list"].apply(lambda x: len(x) <= 6)]
+
+    # titres à rallonge bizarres
+    df = df[df["Name"].apply(lambda x: len(str(x)) < 80)]
+
+    # titres full caps suspects
+    df = df[df["Name"].apply(lambda x: sum(c.isupper() for c in str(x)) < 20)]
+
+    # log pour popularité
+    df["log_reviews"] = np.log1p(df["Total_reviews"])
+
+    return df
+
+
+df = load_cleaned_data()
+st.caption(f"{len(df):,} jeux pris en compte après nettoyage.".replace(",", " "))
+
+# =========================================================
+# 2. CATÉGORISATION PRINCIPALE (VERSION AVEC OPEN WORLD)
+# =========================================================
+
+# liste de grosses licences open world / sandbox
+KNOWN_OPEN_WORLD = [
+    "gta", "grand theft auto",
+    "red dead", "watch dogs",
+    "saints row", "sleeping dogs",
+    "mafia", "just cause",
+    "assassin",  # Assassin's Creed
+    "far cry",
+    "spider-man", "spiderman",
+    "batman arkham"
+]
+
+def infer_main_category(name, genres):
+    if not isinstance(genres, list):
+        genres = []
+    gl = [g.lower() for g in genres]
+    name_low = str(name).lower()
+
+    def contains_any(keywords):
+        return any(any(k in g for k in keywords) for g in gl)
+
+    # -------- OPEN WORLD / SANDBOX (même si le tag n'est pas présent) --------
+    if any(k in name_low for k in KNOWN_OPEN_WORLD) or \
+       contains_any(["open world", "sandbox", "crime"]):
+        return "Open World / Sandbox"
+
+    # Battle Royale
+    if contains_any(["battle royale"]):
+        return "Battle Royale"
+
+    # FPS compétitif
+    if contains_any(["fps", "first-person shooter", "shooter"]) and not contains_any(["battle royale"]):
+        return "FPS"
+
+    # RPG
+    if contains_any(["rpg", "jrpg", "role-playing", "action rpg"]):
+        return "RPG"
+
+    # MMO
+    if contains_any(["mmorpg", "mmo", "massively multiplayer"]):
+        return "MMO / MMORPG"
+
+    # Strategy
+    if contains_any(["strategy", "rts", "4x", "turn-based"]):
+        return "Strategy"
+
+    # Simulation
+    if contains_any(["simulation", "simulator", "city builder", "building", "tycoon"]):
+        return "Simulation"
+
+    # Sports / racing
+    if contains_any(["sports", "racing", "football", "soccer", "f1", "basketball", "tennis"]):
+        return "Sports / Racing"
+
+    # Survival / horror
+    if contains_any(["survival", "horror", "zombie"]):
+        return "Survival / Horror"
+
+    # Indie / casual
+    if contains_any(["indie", "casual", "puzzle", "relaxing"]):
+        return "Indie / Casual"
+
+    # fallback
+    if contains_any(["action", "adventure"]):
+        return "Action / Adventure"
+
+    return "Autre"
+
+
+df["main_category"] = df.apply(
+    lambda row: infer_main_category(row["Name"], row["Genres_list"]),
+    axis=1
+)
+
+# =========================================================
+# 3. SÉLECTION DU JEU
+# =========================================================
+st.subheader("Sélection du jeu de référence")
+
+selected_game = st.selectbox(
+    "Choisissez un jeu :",
+    sorted(df["Name"].unique())
+)
+
+game_row = df[df["Name"] == selected_game].iloc[0]
+cat = game_row["main_category"]
+
+st.info(f"Jeu sélectionné : **{selected_game}** — catégorie détectée : **{cat}**")
+st.markdown("---")
+
+# =========================================================
+# 4. MOTEUR DE SIMILARITÉ
+# =========================================================
+def genre_overlap_count(target_row, ref_row):
+    g1 = set(ref_row["Genres_list"])
+    g2 = set(target_row["Genres_list"])
+    return len(g1.intersection(g2))
+
+
+def similarity_score(target_row, ref_row):
+    g1 = set(ref_row["Genres_list"])
+    g2 = set(target_row["Genres_list"])
+
+    # genres (0–50)
+    if len(g1):
+        genre_score = len(g1.intersection(g2)) / len(g1) * 50
+    else:
+        genre_score = 0
+
+    # qualité (0–30)
+    ratio_diff = abs(ref_row["Ratio_Positive"] - target_row["Ratio_Positive"])
+    qual_score = max(0, (1 - ratio_diff) * 30)
+
+    # popularité (0–20)
+    pop_diff = abs(ref_row["log_reviews"] - target_row["log_reviews"])
+    pop_score = max(0, (1 - pop_diff / 5) * 20)
+
+    return genre_score + qual_score + pop_score
+
+
+# candidats = même catégorie
+candidates = df[df["Name"] != selected_game].copy()
+same_cat = candidates[candidates["main_category"] == cat].copy()
+
+# si assez de jeux dans la catégorie, on reste dedans
+if len(same_cat) >= 20:
+    base = same_cat
+else:
+    base = candidates  # fallback global
+
+# on impose au moins 1 genre en commun si possible
+base["common_genres"] = base.apply(
+    lambda r: genre_overlap_count(r, game_row),
+    axis=1
+)
+
+with_common = base[base["common_genres"] >= 1]
+
+if len(with_common) >= 5:
+    work = with_common
+else:
+    work = base  # en dernier recours
+
+work["score_similarité"] = work.apply(
+    lambda r: similarity_score(r, game_row),
+    axis=1
+)
+
+top5 = work.sort_values("score_similarité", ascending=False).head(5)
+
+if top5.empty:
+    st.error("Pas assez de données pour générer des recommandations pertinentes.")
+    st.stop()
+
+# =========================================================
+# 5. AFFICHAGE DES RECOMMANDATIONS
+# =========================================================
+st.subheader(f"Jeux recommandés pour **{selected_game}**")
+
+for _, row in top5.iterrows():
+    genres_txt = ", ".join(row["Genres_list"]) if row["Genres_list"] else "Non renseigné"
+    st.markdown(f"""
+    <div style="background:#2c2c2c; padding:15px; border-radius:8px; margin-bottom:10px;">
+        <h4 style="color:#9b59b6; margin-bottom:4px;">🎮 {row['Name']}</h4>
+        <p style="color:#d0d0d0; margin:0;">
+            Score de similarité : <b>{row['score_similarité']:.1f} / 100</b><br>
+            Catégorie : <b>{row['main_category']}</b><br>
+            Ratio positif : {row['Ratio_Positive']*100:.1f} %<br>
+            Avis totaux : {int(row['Total_reviews']):,} avis<br>
+            Genres : {genres_txt}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("---")
+
+# =========================================================
+# 6. VISUALISATION
+# =========================================================
+st.subheader("Popularité × Qualité des jeux recommandés")
+
+fig = px.scatter(
+    top5,
+    x="Total_reviews",
+    y="Ratio_Positive",
+    size="Total_reviews",
+    color="score_similarité",
+    hover_name="Name",
+    color_continuous_scale="Plasma",
+    height=600,
+)
+
+fig.add_scatter(
+    x=[game_row["Total_reviews"]],
+    y=[game_row["Ratio_Positive"]],
+    mode="markers+text",
+    text=[selected_game],
+    textposition="top center",
+    marker=dict(size=20, color="white", line=dict(width=2, color="black")),
+    name="Jeu sélectionné"
+)
+
+fig.update_layout(
+    xaxis_title="Nombre d'avis",
+    yaxis_title="Ratio d'avis positifs",
+    template="plotly_dark",
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+# =========================================================
+# 7. EXPLICATION
+# =========================================================
+st.subheader("Pourquoi ces recommandations ?")
+
+ratio_ref = game_row["Ratio_Positive"] * 100
+avis_ref = int(game_row["Total_reviews"])
+
+ratio_rec = top5["Ratio_Positive"].mean() * 100
+avis_rec = int(top5["Total_reviews"].mean())
+
+st.markdown(f"""
+Les jeux recommandés appartiennent à la même famille que **{selected_game}** :  
+👉 **{cat}**
+
+Ils ont été sélectionnés sur la base de :
+
+- **Genres partagés** (au moins un genre en commun avec le jeu de référence)  
+- **Qualité comparable** :  
+  - {selected_game} : **{ratio_ref:.1f} %** d'avis positifs  
+  - Recommandations (moyenne) : **{ratio_rec:.1f} %**  
+- **Popularité proche** :  
+  - {selected_game} : **{avis_ref:,} avis**  
+  - Recommandations (moyenne) : **{avis_rec:,} avis**
+
+Le score de similarité combine ces trois dimensions pour proposer des titres cohérents,
+proches de l'expérience de jeu offerte par **{selected_game}**.
+""".replace(",", " "))
+
+st.page_link("pages/05_Synthèse_&_Conclusions.py", label="Page précédente : Synthèse & Conclusion")
