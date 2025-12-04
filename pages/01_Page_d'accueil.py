@@ -62,18 +62,34 @@ URL_GAMES_CLEAN = "https://github.com/Phantosirius/steam-dashboard/releases/down
 
 
 # =========================================================
-# Fonction de chargement compatible GitHub Release
+# Fonction optimisée : chargement PARTIEL des CSV
 # =========================================================
-def load_csv_from_github(url):
-    """Télécharge un CSV lourd depuis GitHub Release et retourne un DataFrame."""
-    response = requests.get(url)
-    response.raise_for_status()
-    return pd.read_csv(StringIO(response.text))
+def load_partial_csv(url, nrows=500):
+    """
+    Charge uniquement les premières lignes d’un CSV volumineux
+    hébergé sur GitHub Releases.
+    """
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return pd.read_csv(StringIO(response.text), nrows=nrows)
+    except Exception as e:
+        raise RuntimeError(f"Impossible de charger {url} : {e}")
 
 
 @st.cache_data
-def load_dataset(url):
-    return load_csv_from_github(url)
+def load_full_csv_columns(url):
+    """
+    Charge seulement les colonnes d’un gros CSV (pour expander),
+    sans charger les données complètes.
+    """
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        df = pd.read_csv(StringIO(response.text), nrows=5)  # lecture minimale
+        return list(df.columns)
+    except Exception as e:
+        raise RuntimeError(f"Impossible de charger les colonnes : {e}")
 
 
 # --------------------------------------
@@ -95,7 +111,7 @@ st.markdown("<div class='section-title'>Problématique</div>", unsafe_allow_html
 
 st.markdown("""
 <div class="block">
-Quels sont les facteurs qui déterminent le succès d’un jeu sur Steam, 
+Quels sont les facteurs qui déterminent le succès d’un jeu sur Steam,
 et comment ces éléments permettent-ils d’identifier les genres les plus prometteurs entre 2014 et 2024 ?
 </div>
 """, unsafe_allow_html=True)
@@ -114,7 +130,7 @@ Steam Games Dataset
 </a>
 
 <br><br>
-Les étapes de nettoyage présentées ci-dessous expliquent le passage :
+Les étapes de transformation expliquent le passage :
 <ul>
 <li>du dataset brut (<code>games.csv</code>)</li>
 <li>au dataset corrigé (<code>games_fixed.csv</code>)</li>
@@ -125,32 +141,31 @@ Les étapes de nettoyage présentées ci-dessous expliquent le passage :
 
 
 # =========================================================
-# Aperçu interactif des datasets
+# Aperçu interactif des datasets (lecture légère)
 # =========================================================
-def display_limited_dataset(source, title):
+def display_limited_dataset(url, title):
     try:
-        df = load_dataset(source)
+        df = load_partial_csv(url, nrows=300)
         st.write(f"### {title}")
-        st.markdown(f"Taille originale : **{df.shape[0]} lignes × {df.shape[1]} colonnes**")
         st.dataframe(df.head(15), use_container_width=True)
-        st.caption("Aperçu limité aux 15 premières lignes.")
+        st.caption("Aperçu limité aux 15 premières lignes (lecture partielle du fichier).")
     except Exception as e:
-        st.error(f"Erreur lors du chargement : {e}")
+        st.error(f"Erreur : {e}")
 
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("Dataset brut"):
-        display_limited_dataset(URL_GAMES_RAW, "Dataset brut (GitHub Release)")
+        display_limited_dataset(URL_GAMES_RAW, "Dataset brut")
 
 with col2:
     if st.button("Dataset corrigé"):
-        display_limited_dataset(URL_GAMES_FIXED, "Dataset corrigé (GitHub Release)")
+        display_limited_dataset(URL_GAMES_FIXED, "Dataset corrigé")
 
 with col3:
     if st.button("Dataset nettoyé"):
-        display_limited_dataset(URL_GAMES_CLEAN, "Dataset nettoyé (GitHub Release)")
+        display_limited_dataset(URL_GAMES_CLEAN, "Dataset nettoyé")
 
 
 st.markdown("<hr>", unsafe_allow_html=True)
@@ -161,16 +176,16 @@ st.markdown("<hr>", unsafe_allow_html=True)
 # =========================================================
 st.markdown("<div class='section-title'>Structure du dataset final</div>", unsafe_allow_html=True)
 
-df_clean = load_dataset(URL_GAMES_CLEAN)
+cols = load_full_csv_columns(URL_GAMES_CLEAN)
 
 with st.expander("Liste des colonnes"):
-    st.write(df_clean.columns.tolist())
+    st.write(cols)
 
 with st.expander("Description des colonnes"):
     descriptions = {
-        "AppID": "Identifiant unique du jeu sur Steam.",
+        "AppID": "Identifiant unique du jeu.",
         "Name": "Nom du jeu.",
-        "Release_date": "Date exacte de sortie.",
+        "Release_date": "Date de sortie.",
         "Release_year": "Année de sortie.",
         "Developer": "Développeur.",
         "Publisher": "Éditeur.",
@@ -181,12 +196,12 @@ with st.expander("Description des colonnes"):
         "Genres": "Genres bruts.",
         "Genres_list": "Genres nettoyés.",
         "Tags": "Tags Steam.",
-        "Price": "Prix.",
+        "Price": "Prix initial.",
         "Discount": "Réduction.",
         "DLC_count": "Nombre de DLC.",
-        "Windows": "Disponible sur Windows.",
-        "Mac": "Disponible sur Mac.",
-        "Linux": "Disponible sur Linux."
+        "Windows": "Compatibilité Windows.",
+        "Mac": "Compatibilité Mac.",
+        "Linux": "Compatibilité Linux."
     }
     st.write(pd.DataFrame.from_dict(descriptions, orient="index", columns=["Description"]))
 
@@ -210,7 +225,7 @@ Analyse des sorties annuelles et dynamique globale du marché.
 
 <div class='block'>
 <strong>Jeux populaires</strong><br>
-Identification des leaders du marché selon les avis et les notes.
+Identification des leaders du marché selon les avis.
 </div>
 """, unsafe_allow_html=True)
 
@@ -218,19 +233,16 @@ with colB:
     st.markdown("""
 <div class='block'>
 <strong>Genres & stratégie</strong><br>
-Analyse croissance × qualité × popularité pour comparer les genres.
+Analyse croisée (qualité × popularité × croissance).
 </div>
 
 <div class='block'>
 <strong>Recommandations finales</strong><br>
-Synthèse stratégique pour orienter un développement de jeu.
+Synthèse stratégique complète.
 </div>
 """, unsafe_allow_html=True)
 
 
-# --------------------------------------
-# Footer + lien vers page suivante
-# --------------------------------------
 st.markdown("<div class='footer'>Analyse du marché Steam (2014–2024)</div>", unsafe_allow_html=True)
 
 st.page_link("pages/02_Marché_global.py", label="➡️ Page suivante : Marché global")
