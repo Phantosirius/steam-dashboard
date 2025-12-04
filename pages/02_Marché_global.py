@@ -39,42 +39,25 @@ h1 {
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 🔗 URL GitHub Release du dataset propre
+# CHARGEMENT DU FICHIER LOCAL
 # =========================================================
-URL_GAMES_CLEAN = "https://github.com/Phantosirius/steam-dashboard/releases/download/v1.0/games_clean.csv"
 
+PATH_GAMES_CLEAN = "data/games_clean.csv"
 
-# =========================================================
-# Fonction de chargement ROBUSTE (lecture binaire complète)
-# =========================================================
 @st.cache_data
-def load_full_clean_dataset():
-    """
-    Charge TOUT le fichier games_clean.csv depuis GitHub Release.
-    Le fichier fait ~300 Mo, donc on utilise la lecture binaire.
-    """
-    try:
-        response = requests.get(URL_GAMES_CLEAN, stream=True)
-        response.raise_for_status()
+def load_data():
+    df = pd.read_csv(PATH_GAMES_CLEAN)
 
-        content = response.content  # récupération binaire
-        df = pd.read_csv(BytesIO(content))
+    # Sécurité
+    if "Total_reviews" not in df.columns:
+        df["Total_reviews"] = df["Positive"] + df["Negative"]
 
-        # Sécurité si certaines colonnes manquent
-        if "Total_reviews" not in df.columns:
-            df["Total_reviews"] = df["Positive"] + df["Negative"]
+    if "Ratio_Positive" not in df.columns:
+        df["Ratio_Positive"] = df["Positive"] / df["Total_reviews"].replace(0, 1)
 
-        if "Ratio_Positive" not in df.columns:
-            df["Ratio_Positive"] = df["Positive"] / df["Total_reviews"].replace(0, 1)
+    return df[df["Release_year"].between(2014, 2024)]
 
-        # Filtre sur 2014–2024
-        return df[df["Release_year"].between(2014, 2024)]
-
-    except Exception as e:
-        st.error(f"Erreur lors du chargement du dataset : {e}")
-        return pd.DataFrame()
-
-df = load_full_clean_dataset()
+df = load_data()
 
 
 # =========================================================

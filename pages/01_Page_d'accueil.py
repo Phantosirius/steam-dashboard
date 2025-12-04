@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # --------------------------------------
-# CSS : style épuré et pro
+# CSS
 # --------------------------------------
 st.markdown("""
 <style>
@@ -51,45 +51,48 @@ h1 {
 </style>
 """, unsafe_allow_html=True)
 
-
 # =========================================================
-# 🔗 URLs GitHub Release des datasets
+# DATA SOURCES
 # =========================================================
 
+# GitHub Release (gros fichiers bruts corrigés)
 URL_GAMES_RAW   = "https://github.com/Phantosirius/steam-dashboard/releases/download/v1.0/games.csv"
 URL_GAMES_FIXED = "https://github.com/Phantosirius/steam-dashboard/releases/download/v1.0/games_fixed.csv"
-URL_GAMES_CLEAN = "https://github.com/Phantosirius/steam-dashboard/releases/download/v1.0/games_clean.csv"
+
+# Fichier propre & léger, stocké dans le repo
+PATH_GAMES_CLEAN = "data/games_clean.csv"
 
 
 # =========================================================
-# Fonction optimisée : lecture BINAIRE & PARTIELLE
+# FONCTIONS DE CHARGEMENT
 # =========================================================
+
 def load_partial_csv_github(url, nrows=20):
     """
-    Lecture partielle (3 Mo max) d’un CSV volumineux à partir d’un fichier GitHub Release.
-    Compatible Streamlit Cloud.
+    Lecture légère depuis GitHub Release (limite 3 Mo).
     """
     try:
         response = requests.get(url, stream=True)
         response.raise_for_status()
-
-        # lecture binaire (3 Mo max)
-        chunk = response.raw.read(3_000_000)
-
+        chunk = response.raw.read(3_000_000)  # max 3 Mo
         return pd.read_csv(BytesIO(chunk), nrows=nrows)
-
     except Exception as e:
-        raise RuntimeError(f"Erreur de chargement binaire GitHub : {e}")
+        raise RuntimeError(f"Erreur GitHub : {e}")
+
+
+def preview_local_csv(path, nrows=20):
+    """Lecture rapide d’un CSV local."""
+    return pd.read_csv(path, nrows=nrows)
 
 
 @st.cache_data
-def preview_dataset(url):
-    return load_partial_csv_github(url, nrows=20)
+def preview_dataset_github(url):
+    return load_partial_csv_github(url)
 
 
-# --------------------------------------
+# =========================================================
 # TITRE
-# --------------------------------------
+# =========================================================
 st.title("Analyse du marché Steam (2014–2024)")
 st.markdown(
     "<p class='small-note'>Étude interactive du marché vidéoludique sur dix années d’évolution.</p>",
@@ -97,7 +100,6 @@ st.markdown(
 )
 
 st.markdown("<hr>", unsafe_allow_html=True)
-
 
 # =========================================================
 # Problématique
@@ -136,14 +138,22 @@ Les étapes de transformation expliquent le passage :
 
 
 # =========================================================
-# Aperçu interactif des datasets (lecture légère)
+# Aperçu interactif des datasets
 # =========================================================
-def display_preview(url, title):
+def display_preview_from_github(url, title):
     try:
-        df = preview_dataset(url)
+        df = preview_dataset_github(url)
         st.write(f"### {title}")
         st.dataframe(df, use_container_width=True)
-        st.caption("Aperçu limité aux premières lignes (lecture partielle du fichier).")
+    except Exception as e:
+        st.error(f"Erreur : {e}")
+
+
+def display_preview_local(path, title):
+    try:
+        df = preview_local_csv(path)
+        st.write(f"### {title}")
+        st.dataframe(df, use_container_width=True)
     except Exception as e:
         st.error(f"Erreur : {e}")
 
@@ -152,15 +162,15 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("Dataset brut"):
-        display_preview(URL_GAMES_RAW, "Dataset brut")
+        display_preview_from_github(URL_GAMES_RAW, "Dataset brut (GitHub Release)")
 
 with col2:
     if st.button("Dataset corrigé"):
-        display_preview(URL_GAMES_FIXED, "Dataset corrigé")
+        display_preview_from_github(URL_GAMES_FIXED, "Dataset corrigé (GitHub Release)")
 
 with col3:
     if st.button("Dataset nettoyé"):
-        display_preview(URL_GAMES_CLEAN, "Dataset nettoyé")
+        display_preview_local(PATH_GAMES_CLEAN, "Dataset nettoyé (local)")
 
 
 st.markdown("<hr>", unsafe_allow_html=True)
@@ -171,8 +181,7 @@ st.markdown("<hr>", unsafe_allow_html=True)
 # =========================================================
 st.markdown("<div class='section-title'>Structure du dataset final</div>", unsafe_allow_html=True)
 
-# 👉 Lecture ultra légère pour récupérer uniquement les colonnes
-cols = preview_dataset(URL_GAMES_CLEAN).columns.tolist()
+cols = preview_local_csv(PATH_GAMES_CLEAN).columns.tolist()
 
 with st.expander("Liste des colonnes"):
     st.write(cols)
@@ -189,15 +198,9 @@ with st.expander("Description des colonnes"):
         "Negative": "Avis négatifs.",
         "Total_reviews": "Total des avis.",
         "Ratio_Positive": "Pourcentage d’avis positifs.",
-        "Genres": "Genres bruts.",
         "Genres_list": "Genres nettoyés.",
-        "Tags": "Tags Steam.",
-        "Price": "Prix initial.",
-        "Discount": "Réduction.",
+        "Price": "Prix du jeu.",
         "DLC_count": "Nombre de DLC.",
-        "Windows": "Compatibilité Windows.",
-        "Mac": "Compatibilité Mac.",
-        "Linux": "Compatibilité Linux."
     }
     st.write(pd.DataFrame.from_dict(descriptions, orient="index", columns=["Description"]))
 
@@ -238,10 +241,9 @@ Synthèse stratégique complète.
 </div>
 """, unsafe_allow_html=True)
 
-
 # --------------------------------------
 # Footer
 # --------------------------------------
 st.markdown("<div class='footer'>Analyse du marché Steam (2014–2024)</div>", unsafe_allow_html=True)
 
-st.page_link("pages/02_Marché_global.py", label="➡️ Page suivante : Marché global")
+st.page_link("pages/02_Marché_global.py", label="Page suivante : Marché global")
