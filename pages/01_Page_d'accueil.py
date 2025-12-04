@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-import os
+import requests
+from io import StringIO
 
 # --------------------------------------
 # Configuration générale
@@ -50,6 +51,31 @@ h1 {
 </style>
 """, unsafe_allow_html=True)
 
+
+# =========================================================
+# 🔗 URLs GitHub Release des datasets
+# =========================================================
+
+URL_GAMES_RAW   = "https://github.com/Phantosirius/steam-dashboard/releases/download/v1.0/games.csv"
+URL_GAMES_FIXED = "https://github.com/Phantosirius/steam-dashboard/releases/download/v1.0/games_fixed.csv"
+URL_GAMES_CLEAN = "https://github.com/Phantosirius/steam-dashboard/releases/download/v1.0/games_clean.csv"
+
+
+# =========================================================
+# Fonction de chargement compatible GitHub Release
+# =========================================================
+def load_csv_from_github(url):
+    """Télécharge un CSV lourd depuis GitHub Release et retourne un DataFrame."""
+    response = requests.get(url)
+    response.raise_for_status()
+    return pd.read_csv(StringIO(response.text))
+
+
+@st.cache_data
+def load_dataset(url):
+    return load_csv_from_github(url)
+
+
 # --------------------------------------
 # TITRE
 # --------------------------------------
@@ -60,23 +86,6 @@ st.markdown(
 )
 
 st.markdown("<hr>", unsafe_allow_html=True)
-
-
-# =========================================================
-# 🔗 URLs Google Drive des datasets
-# =========================================================
-
-URL_GAMES_RAW   = "https://drive.google.com/uc?export=download&id=1gEXM4_jHN3CsVDeZgXNuqIuYyf0SrO6j"
-URL_GAMES_FIXED = "https://drive.google.com/uc?export=download&id=12HBc15YkoK1G96xJd4E1oXwNXDDWMwgN"
-URL_GAMES_CLEAN = "https://drive.google.com/uc?export=download&id=1qbrm-9C9PQ861r6D0-M03HFU036iOjNS"
-
-
-# =========================================================
-# Fonction de chargement compatible URL + local
-# =========================================================
-@st.cache_data
-def load_dataset(path_or_url):
-    return pd.read_csv(path_or_url)
 
 
 # =========================================================
@@ -133,15 +142,15 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("Dataset brut"):
-        display_limited_dataset(URL_GAMES_RAW, "Dataset brut (Google Drive)")
+        display_limited_dataset(URL_GAMES_RAW, "Dataset brut (GitHub Release)")
 
 with col2:
     if st.button("Dataset corrigé"):
-        display_limited_dataset(URL_GAMES_FIXED, "Dataset corrigé (Google Drive)")
+        display_limited_dataset(URL_GAMES_FIXED, "Dataset corrigé (GitHub Release)")
 
 with col3:
     if st.button("Dataset nettoyé"):
-        display_limited_dataset(URL_GAMES_CLEAN, "Dataset nettoyé (Google Drive)")
+        display_limited_dataset(URL_GAMES_CLEAN, "Dataset nettoyé (GitHub Release)")
 
 
 st.markdown("<hr>", unsafe_allow_html=True)
@@ -225,4 +234,3 @@ Synthèse stratégique pour orienter un développement de jeu.
 st.markdown("<div class='footer'>Analyse du marché Steam (2014–2024)</div>", unsafe_allow_html=True)
 
 st.page_link("pages/02_Marché_global.py", label="➡️ Page suivante : Marché global")
-
