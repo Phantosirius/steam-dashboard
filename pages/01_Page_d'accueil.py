@@ -62,34 +62,34 @@ URL_GAMES_CLEAN = "https://github.com/Phantosirius/steam-dashboard/releases/down
 
 
 # =========================================================
-# Fonction optimisée : chargement PARTIEL des CSV
+# 🚀 FONCTION STREAMING : LIRE SEULEMENT LES PREMIÈRES LIGNES
 # =========================================================
-def load_partial_csv(url, nrows=500):
+def load_preview_csv(url, preview_rows=15):
     """
-    Charge uniquement les premières lignes d’un CSV volumineux
-    hébergé sur GitHub Releases.
+    Télécharge uniquement les premières lignes d’un CSV massif via un stream.
+    Cela évite de charger 300 Mo en mémoire (limitations Streamlit Cloud).
     """
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return pd.read_csv(StringIO(response.text), nrows=nrows)
+        with requests.get(url, stream=True) as r:
+            r.raise_for_status()
+
+            lines = []
+            for i, line in enumerate(r.iter_lines(decode_unicode=True)):
+                if i > preview_rows:  # on arrête tôt = rapide
+                    break
+                lines.append(line)
+
+        csv_data = "\n".join(lines)
+        return pd.read_csv(StringIO(csv_data))
+
     except Exception as e:
-        raise RuntimeError(f"Impossible de charger {url} : {e}")
+        raise RuntimeError(f"Erreur lors du chargement streaming : {e}")
 
 
 @st.cache_data
-def load_full_csv_columns(url):
-    """
-    Charge seulement les colonnes d’un gros CSV (pour expander),
-    sans charger les données complètes.
-    """
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        df = pd.read_csv(StringIO(response.text), nrows=5)  # lecture minimale
-        return list(df.columns)
-    except Exception as e:
-        raise RuntimeError(f"Impossible de charger les colonnes : {e}")
+def cached_preview(url):
+    return load_preview_csv(url)
+
 
 
 # --------------------------------------
@@ -100,7 +100,6 @@ st.markdown(
     "<p class='small-note'>Étude interactive du marché vidéoludique sur dix années d’évolution.</p>",
     unsafe_allow_html=True
 )
-
 st.markdown("<hr>", unsafe_allow_html=True)
 
 
@@ -124,48 +123,48 @@ st.markdown("<div class='section-title'>Datasets utilisés</div>", unsafe_allow_
 
 st.markdown("""
 <div class="block">
-L’application repose sur les données du dataset Kaggle :  
+Les données proviennent du dataset Kaggle :  
 <a class='link' href="https://www.kaggle.com/datasets/fronkongames/steam-games-dataset/data">
 Steam Games Dataset
 </a>
 
 <br><br>
-Les étapes de transformation expliquent le passage :
+Transformation des fichiers :
 <ul>
-<li>du dataset brut (<code>games.csv</code>)</li>
-<li>au dataset corrigé (<code>games_fixed.csv</code>)</li>
-<li>au dataset final utilisé (<code>games_clean.csv</code>)</li>
+<li>Dataset brut : <code>games.csv</code></li>
+<li>Dataset corrigé : <code>games_fixed.csv</code></li>
+<li>Dataset final nettoyé : <code>games_clean.csv</code></li>
 </ul>
 </div>
 """, unsafe_allow_html=True)
 
 
 # =========================================================
-# Aperçu interactif des datasets (lecture légère)
+# Aperçu léger des datasets
 # =========================================================
-def display_limited_dataset(url, title):
+def display_preview(url, title):
     try:
-        df = load_partial_csv(url, nrows=300)
+        df = cached_preview(url)
         st.write(f"### {title}")
-        st.dataframe(df.head(15), use_container_width=True)
-        st.caption("Aperçu limité aux 15 premières lignes (lecture partielle du fichier).")
+        st.dataframe(df, use_container_width=True)
+        st.caption("Aperçu limité (lecture streaming, ultra-rapide).")
     except Exception as e:
-        st.error(f"Erreur : {e}")
+        st.error(str(e))
 
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("Dataset brut"):
-        display_limited_dataset(URL_GAMES_RAW, "Dataset brut")
+        display_preview(URL_GAMES_RAW, "Dataset brut")
 
 with col2:
     if st.button("Dataset corrigé"):
-        display_limited_dataset(URL_GAMES_FIXED, "Dataset corrigé")
+        display_preview(URL_GAMES_FIXED, "Dataset corrigé")
 
 with col3:
     if st.button("Dataset nettoyé"):
-        display_limited_dataset(URL_GAMES_CLEAN, "Dataset nettoyé")
+        display_preview(URL_GAMES_CLEAN, "Dataset nettoyé")
 
 
 st.markdown("<hr>", unsafe_allow_html=True)
@@ -176,32 +175,33 @@ st.markdown("<hr>", unsafe_allow_html=True)
 # =========================================================
 st.markdown("<div class='section-title'>Structure du dataset final</div>", unsafe_allow_html=True)
 
-cols = load_full_csv_columns(URL_GAMES_CLEAN)
+# lecture super légère : on stream seulement 15 lignes
+df_cols = cached_preview(URL_GAMES_CLEAN)
 
 with st.expander("Liste des colonnes"):
-    st.write(cols)
+    st.write(df_cols.columns.tolist())
 
 with st.expander("Description des colonnes"):
     descriptions = {
-        "AppID": "Identifiant unique du jeu.",
+        "AppID": "Identifiant Steam.",
         "Name": "Nom du jeu.",
-        "Release_date": "Date de sortie.",
-        "Release_year": "Année de sortie.",
+        "Release_date": "Date précise.",
+        "Release_year": "Année.",
         "Developer": "Développeur.",
         "Publisher": "Éditeur.",
         "Positive": "Avis positifs.",
         "Negative": "Avis négatifs.",
-        "Total_reviews": "Total des avis.",
-        "Ratio_Positive": "Pourcentage d’avis positifs.",
+        "Total_reviews": "Avis totaux.",
+        "Ratio_Positive": "% d’avis positifs.",
         "Genres": "Genres bruts.",
         "Genres_list": "Genres nettoyés.",
         "Tags": "Tags Steam.",
-        "Price": "Prix initial.",
+        "Price": "Prix du jeu.",
         "Discount": "Réduction.",
         "DLC_count": "Nombre de DLC.",
-        "Windows": "Compatibilité Windows.",
-        "Mac": "Compatibilité Mac.",
-        "Linux": "Compatibilité Linux."
+        "Windows": "Disponible sur Windows.",
+        "Mac": "Disponible sur Mac.",
+        "Linux": "Disponible sur Linux."
     }
     st.write(pd.DataFrame.from_dict(descriptions, orient="index", columns=["Description"]))
 
@@ -220,12 +220,12 @@ with colA:
     st.markdown("""
 <div class='block'>
 <strong>Marché global</strong><br>
-Analyse des sorties annuelles et dynamique globale du marché.
+Évolution des sorties de jeux et dynamique du marché.
 </div>
 
 <div class='block'>
 <strong>Jeux populaires</strong><br>
-Identification des leaders du marché selon les avis.
+Classement des jeux les plus influents.
 </div>
 """, unsafe_allow_html=True)
 
@@ -233,16 +233,19 @@ with colB:
     st.markdown("""
 <div class='block'>
 <strong>Genres & stratégie</strong><br>
-Analyse croisée (qualité × popularité × croissance).
+Analyse croisée popularité × qualité × croissance.
 </div>
 
 <div class='block'>
-<strong>Recommandations finales</strong><br>
-Synthèse stratégique complète.
+<strong>Recommandations</strong><br>
+Moteur de similarité pour proposer des jeux proches.
 </div>
 """, unsafe_allow_html=True)
 
 
+# --------------------------------------
+# Footer
+# --------------------------------------
 st.markdown("<div class='footer'>Analyse du marché Steam (2014–2024)</div>", unsafe_allow_html=True)
 
 st.page_link("pages/02_Marché_global.py", label="➡️ Page suivante : Marché global")
