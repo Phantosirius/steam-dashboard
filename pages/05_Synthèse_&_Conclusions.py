@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import os
 
 # =========================================================
 # CONFIG
@@ -22,16 +21,19 @@ st.markdown("""
 st.markdown("---")
 
 # =========================================================
-# CHARGEMENT DES DONNÉES
+# 🔥 CHARGEMENT DES DONNÉES VIA GOOGLE DRIVE
 # =========================================================
-DATA_DIR = "data"
-FILE = os.path.join(DATA_DIR, "games_clean.csv")
 
-df = pd.read_csv(FILE)
+URL_GAMES_CLEAN = "https://drive.google.com/uc?export=download&id=1qbrm-9C9PQ861r6D0-M03HFU036iOjNS"
 
-# Total reviews
-df["Total_reviews"] = df["Positive"] + df["Negative"]
-df["Ratio_Positive"] = df["Positive"] / df["Total_reviews"].replace(0, 1)
+df = pd.read_csv(URL_GAMES_CLEAN)
+
+# sécurités
+df["Total_reviews"] = df.get("Total_reviews", df["Positive"] + df["Negative"])
+df["Ratio_Positive"] = df.get("Ratio_Positive", df["Positive"] / df["Total_reviews"].replace(0, 1))
+
+# cohérence 2014–2024
+df = df[df["Release_year"].between(2014, 2024)]
 
 # =========================================================
 # INTRO
@@ -80,7 +82,6 @@ Certaines périodes (2016–2020) ont vu exploser :
 - les Battle Royale  
 - les action-open world  
 - les FPS tactiques  
-Ce qui influence encore les attentes des joueurs.
 
 ### ✔ 4. **La stratégie de prix**
 Le marché 2014–2024 se caractérise par :
@@ -89,7 +90,7 @@ Le marché 2014–2024 se caractérise par :
 → favoriser l'adoption rapide et le volume
 
 ### ✔ 5. **L’appartenance à un genre porteur**
-Certains genres structurent mieux la communauté que d'autres (RPG, Open World, Simulation…).
+Certains genres structurent mieux la communauté que d'autres (RPG, Simulation…).
 
 En combinant ces éléments, on comprend mieux pourquoi certains jeux 
 ont dominé Steam : GTA V, PUBG, Elden Ring, RDR2, etc.
@@ -130,7 +131,7 @@ with colg1:
     st.markdown("""
 ### Genres **Winner**
 Croissance élevée + excellente qualité  
-→ Exemples typiques :
+→ Exemples :
 - **RPG / Action-RPG**  
 - **Simulation / City-builder**  
 - **Souls-like**  
@@ -149,7 +150,6 @@ Croissance forte mais qualité encore variable
 - **Deckbuilding**  
 
 Très porteurs pour des studios indé ou AA.
-
 """)
 
 colg3, colg4 = st.columns(2)
@@ -188,29 +188,23 @@ st.markdown("""
 Un jeu a tendance à performer sur Steam lorsqu'il combine :
 - **Popularité forte (avis)** → visibilité & crédibilité  
 - **Qualité élevée** → recommandation & fidélisation  
-- **Appartenance à un genre porteur** → attentes claires  
-- **Positionnement correct sur le prix**  
-- **Effet communauté & régularité des mises à jour**  
-- **Sortie dans une période de tendance favorable**  
+- **Genre porteur** → attentes claires du public  
+- **Stratégie de prix cohérente**  
+- **Mises à jour régulières & communauté active**
 
 ### ✔ Genres les plus prometteurs (2014–2024)
 D’après nos analyses stratégiques :
 - **RPG / Action-RPG**
-- **Open World narratif / Sandbox**
+- **Open World narratif**
 - **Simulation / City-Builder**
 - **FPS tactiques & extraction shooters**
 - **Rogue-lite & Survivals**
 
-Ces genres combinent :
-- une forte demande,
-- une bonne qualité moyenne,
-- une croissance notable sur 10 ans.
-
 ### ✔ Conclusion
-Les données montrent clairement que le succès sur Steam repose sur un 
-équilibre entre **qualité**, **popularité**, **communauté** et **pertinence du genre**.
-À partir de ces observations, les genres listés ci-dessus apparaissent comme les plus 
-prometteurs pour concevoir un jeu compétitif sur les dix prochaines années.
+Le succès sur Steam repose sur un équilibre entre **qualité**, **popularité**, 
+**communauté**, et **pertinence du genre**.  
+À partir de ces observations, plusieurs genres apparaissent comme les plus **porteurs** 
+pour concevoir un jeu compétitif sur les dix prochaines années.
 """)
 
 st.markdown("---")
@@ -221,18 +215,14 @@ st.markdown("---")
 st.header(" Mise en pratique : moteur de recommandation")
 
 st.markdown("""
-La page **« Recommandations »** démontre concrètement comment ces facteurs 
-peuvent être utilisés pour rapprocher les jeux entre eux :
+La page **« Recommandations »** illustre comment ces facteurs permettent 
+de rapprocher les jeux entre eux et d’identifier :
 
-- Similarité des genres  
-- Proximité qualitative  
-- Public comparable  
-- Appartenance à la même famille stratégique  
+- des jeux similaires,  
+- des alternatives crédibles,
+- un positionnement stratégique cohérent.
 
-Cela permet de proposer :
-- des jeux vraiment proches en expérience,  
-- des alternatives crédibles,  
-- un outil d’analyse pour studios, analystes ou joueurs.
+C’est la concrétisation pratique de toute l’analyse précédente.
 """)
 
 col1, col2 = st.columns(2)
@@ -242,5 +232,3 @@ with col1:
 
 with col2:
     st.page_link("pages/06_Recommandations.py", label="Page suivante : Recommandations")
-
-

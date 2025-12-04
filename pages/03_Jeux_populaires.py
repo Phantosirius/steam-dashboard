@@ -5,7 +5,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import os
 
 # ---------------------------------------------------------
 # CONFIGURATION
@@ -48,17 +47,20 @@ st.markdown("""
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# CHARGEMENT DES DONNÉES
+# CHARGEMENT DES DONNÉES — VIA GOOGLE DRIVE
 # ---------------------------------------------------------
-DATA_DIR = "data"
-FILE = os.path.join(DATA_DIR, "games_clean.csv")
+
+URL_GAMES_CLEAN = "https://drive.google.com/uc?export=download&id=1qbrm-9C9PQ861r6D0-M03HFU036iOjNS"
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv(FILE)
+    df = pd.read_csv(URL_GAMES_CLEAN)
 
     df["Total_reviews"] = df["Positive"] + df["Negative"]
     df["Ratio_Positive"] = df["Positive"] / df["Total_reviews"].replace(0, 1)
+
+    # restriction de l’étude (cohérence avec la page marché global)
+    df = df[df["Release_year"].between(2014, 2024)]
 
     return df
 
@@ -84,7 +86,7 @@ st.markdown("<div class='section-title' style='color:#bbbbbb;'>Top 20 – Jeux l
 top20 = df_unique.sort_values("Total_reviews", ascending=False).head(20)
 
 fig1 = px.bar(
-    top20[::-1],  # inverse pour afficher le 1er en haut
+    top20[::-1],
     x="Total_reviews",
     y="Name",
     orientation="h",

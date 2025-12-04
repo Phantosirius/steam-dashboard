@@ -61,20 +61,40 @@ st.markdown(
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
-# --------------------------------------
+
+# =========================================================
+# 🔗 URLs Google Drive des datasets
+# =========================================================
+
+URL_GAMES_RAW   = "https://drive.google.com/uc?export=download&id=1gEXM4_jHN3CsVDeZgXNuqIuYyf0SrO6j"
+URL_GAMES_FIXED = "https://drive.google.com/uc?export=download&id=12HBc15YkoK1G96xJd4E1oXwNXDDWMwgN"
+URL_GAMES_CLEAN = "https://drive.google.com/uc?export=download&id=1qbrm-9C9PQ861r6D0-M03HFU036iOjNS"
+
+
+# =========================================================
+# Fonction de chargement compatible URL + local
+# =========================================================
+@st.cache_data
+def load_dataset(path_or_url):
+    return pd.read_csv(path_or_url)
+
+
+# =========================================================
 # Problématique
-# --------------------------------------
+# =========================================================
 st.markdown("<div class='section-title'>Problématique</div>", unsafe_allow_html=True)
 
 st.markdown("""
 <div class="block">
-Quels sont les facteurs qui déterminent le succès d’un jeu sur Steam, et comment ces éléments permettent-ils d’identifier les genres les plus prometteurs entre 2014 et 2024 ?
+Quels sont les facteurs qui déterminent le succès d’un jeu sur Steam, 
+et comment ces éléments permettent-ils d’identifier les genres les plus prometteurs entre 2014 et 2024 ?
 </div>
 """, unsafe_allow_html=True)
 
-# --------------------------------------
+
+# =========================================================
 # Présentation des datasets
-# --------------------------------------
+# =========================================================
 st.markdown("<div class='section-title'>Datasets utilisés</div>", unsafe_allow_html=True)
 
 st.markdown("""
@@ -94,87 +114,45 @@ Les étapes de nettoyage présentées ci-dessous expliquent le passage :
 </div>
 """, unsafe_allow_html=True)
 
-DATA_DIR = "data"
 
-@st.cache_data
-def load_dataset(path):
-    return pd.read_csv(path)
+# =========================================================
+# Aperçu interactif des datasets
+# =========================================================
+def display_limited_dataset(source, title):
+    try:
+        df = load_dataset(source)
+        st.write(f"### {title}")
+        st.markdown(f"Taille originale : **{df.shape[0]} lignes × {df.shape[1]} colonnes**")
+        st.dataframe(df.head(15), use_container_width=True)
+        st.caption("Aperçu limité aux 15 premières lignes.")
+    except Exception as e:
+        st.error(f"Erreur lors du chargement : {e}")
 
-def display_limited_dataset(path, title):
-    if not os.path.exists(path):
-        st.error(f"Fichier introuvable : {path}")
-        return
-
-    df = load_dataset(path)
-    st.write(f"### {title}")
-    st.markdown(f"Taille originale : **{df.shape[0]} lignes × {df.shape[1]} colonnes**")
-    st.dataframe(df.head(15), use_container_width=True)
-    st.caption("Aperçu limité aux 15 premières lignes.")
-    return df
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("Dataset brut"):
-        display_limited_dataset(os.path.join(DATA_DIR, "games.csv"), "Dataset brut")
+        display_limited_dataset(URL_GAMES_RAW, "Dataset brut (Google Drive)")
 
 with col2:
     if st.button("Dataset corrigé"):
-        display_limited_dataset(os.path.join(DATA_DIR, "games_fixed.csv"), "Dataset corrigé")
+        display_limited_dataset(URL_GAMES_FIXED, "Dataset corrigé (Google Drive)")
 
 with col3:
     if st.button("Dataset nettoyé"):
-        display_limited_dataset(os.path.join(DATA_DIR, "games_clean.csv"), "Dataset nettoyé")
+        display_limited_dataset(URL_GAMES_CLEAN, "Dataset nettoyé (Google Drive)")
+
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
-# --------------------------------------
-# Étapes du nettoyage (mise à jour exacte)
-# --------------------------------------
-st.markdown("<div class='section-title'>Étapes du nettoyage des données</div>", unsafe_allow_html=True)
 
-st.markdown("""
-<div class="block">
-
-<strong>1. Correction structurelle</strong><br>
-Réalignement de la colonne <code>Discount / DLC count</code> qui entraînait un décalage global sur le dataset brut.
-
-<br><br>
-
-<strong>2. Normalisation des formats</strong><br>
-• Conversion des dates en année de sortie (<code>Release_year</code>)<br>
-• Correction des types numériques (avis, prix, DLC…)<br>
-• Nettoyage des chaînes de caractères
-
-<br><br>
-
-<strong>3. Reconstruction des indicateurs analytiques</strong><br>
-• <code>Total_reviews = Positive + Negative</code><br>
-• <code>Ratio_Positive = Positive / Total_reviews</code><br>
-• Parsing avancé des genres (<code>Genres_list</code>)<br>
-• Normalisation des genres (fusion des variantes de “Free to Play”, capitalisation, RPG/MMORPG…)
-
-<br><br>
-
-<strong>4. Filtrage qualité global</strong><br>
-• Exclusion des contenus NSFW (dans <code>Name</code> et <code>Genres</code>)<br>
-• Suppression des doublons sur <code>AppID</code><br>
-• Retrait des valeurs incohérentes (avis négatifs, ratio hors intervalle)
-
-<br><br>
-
-<strong>5. Export final</strong><br>
-Le fichier <code>games_clean.csv</code> constitue la base unique pour l'ensemble de l'application.
-
-</div>
-""", unsafe_allow_html=True)
-
-# --------------------------------------
+# =========================================================
 # Structure du dataset final
-# --------------------------------------
+# =========================================================
 st.markdown("<div class='section-title'>Structure du dataset final</div>", unsafe_allow_html=True)
 
-df_clean = load_dataset(os.path.join(DATA_DIR, "games_clean.csv"))
+df_clean = load_dataset(URL_GAMES_CLEAN)
 
 with st.expander("Liste des colonnes"):
     st.write(df_clean.columns.tolist())
@@ -203,11 +181,13 @@ with st.expander("Description des colonnes"):
     }
     st.write(pd.DataFrame.from_dict(descriptions, orient="index", columns=["Description"]))
 
+
 st.markdown("<hr>", unsafe_allow_html=True)
 
-# --------------------------------------
-# Navigation
-# --------------------------------------
+
+# =========================================================
+# Navigation interne
+# =========================================================
 st.markdown("<div class='section-title'>Contenu de l'application</div>", unsafe_allow_html=True)
 
 colA, colB = st.columns(2)
@@ -238,9 +218,11 @@ Synthèse stratégique pour orienter un développement de jeu.
 </div>
 """, unsafe_allow_html=True)
 
+
 # --------------------------------------
-# Footer
+# Footer + lien vers page suivante
 # --------------------------------------
 st.markdown("<div class='footer'>Analyse du marché Steam (2014–2024)</div>", unsafe_allow_html=True)
 
-st.page_link("pages/02_Marché_global.py", label="Page suivante : Marché global")
+st.page_link("pages/02_Marché_global.py", label="➡️ Page suivante : Marché global")
+

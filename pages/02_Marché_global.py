@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import os
 
 # =========================================================
 # CONFIGURATION
@@ -50,14 +49,14 @@ st.markdown("""
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # =========================================================
-# CHARGEMENT DES DONNÉES
+# CHARGEMENT DES DONNÉES — via Google Drive
 # =========================================================
-DATA_DIR = "data"
-FILE = os.path.join(DATA_DIR, "games_clean.csv")
+
+URL_GAMES_CLEAN = "https://drive.google.com/uc?export=download&id=1qbrm-9C9PQ861r6D0-M03HFU036iOjNS"
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv(FILE)
+    df = pd.read_csv(URL_GAMES_CLEAN)
 
     # Sécurité si certaines colonnes manquent
     if "Total_reviews" not in df.columns:
