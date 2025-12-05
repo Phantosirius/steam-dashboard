@@ -7,7 +7,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# LANDING PAGE STYLÉE
+# STYLE SIMPLE (VERSION DE BASE)
 # ---------------------------------------------------------
 st.markdown("""
 <style>
@@ -15,18 +15,21 @@ st.markdown("""
     text-align:center;
     font-size:45px;
     font-weight:700;
-    color:#6377F8;
+    color:#9b7dff;
     margin-top:40px;
 }
 .subtitle {
     text-align:center;
     font-size:20px;
-    color:#CCCCCC;
+    color:#ffffff;
     margin-top:-10px;
 }
 </style>
 """, unsafe_allow_html=True)
 
+# ---------------------------------------------------------
+# CONTENU
+# ---------------------------------------------------------
 st.markdown("<div class='title'>Analyse du marché Steam</div>", unsafe_allow_html=True)
 st.markdown("<div class='subtitle'>Étude des tendances 2014–2024</div>", unsafe_allow_html=True)
 
@@ -34,15 +37,12 @@ st.write("")
 st.write("")
 
 st.markdown(
-    "<p style='text-align:center; font-size:17px; color:#DDDDDD;'>"
+    "<p style='text-align:center; font-size:17px; color:#808080;'>"
     "Cliquez ci-dessous pour entrer dans l'application."
     "</p>",
     unsafe_allow_html=True
 )
 
-# ---------------------------------------------------------
-# Bouton pour accéder à ta page d'accueil complète
-# ---------------------------------------------------------
 if st.button("➤ Entrer dans l'application", use_container_width=True):
     st.switch_page("pages/01_Page_d'accueil.py")
 

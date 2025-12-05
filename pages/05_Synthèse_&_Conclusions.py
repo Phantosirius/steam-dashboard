@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 # =========================================================
-# CONFIG
+# CONFIGURATION
 # =========================================================
 st.set_page_config(
     page_title="Synthèse & Conclusions",
@@ -11,26 +11,68 @@ st.set_page_config(
     layout="wide"
 )
 
+# =========================================================
+# CSS — STYLE TECH / STEAM
+# =========================================================
 st.markdown("""
-<div style="text-align:center; padding: 15px 0;">
-    <h1 style="color:#9b59b6;"> Synthèse & Conclusions stratégiques</h1>
-    <h3 style="color:#bdc3c7;">Comment les analyses précédentes répondent à la problématique</h3>
+<style>
+
+body {
+    background-color: #0f0f17;
+}
+
+h1 {
+    font-weight: 800;
+    color: #8a5cf6; 
+}
+
+h2, h3, h4 {
+    color: #e2e2e2;
+    font-weight: 700;
+}
+
+.section-title {
+    font-size: 26px;
+    margin-top: 40px;
+    color: #9b7dff;
+}
+
+.block {
+    background: #1a1a24;
+    border-left: 4px solid #8a5cf6;
+    border-right: 4px solid #4b5bff;
+    padding: 18px 22px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    color: #dcdcdc;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# TITRE
+# =========================================================
+st.markdown("""
+<div style="text-align:center; padding: 15px 0 5px 0;">
+    <h1 style="color:#9b7dff;">Synthèse & Conclusions stratégiques</h1>
+    <h3 style="color:white;">Comprendre ce qui construit réellement le succès d’un jeu sur Steam</h3>
 </div>
 """, unsafe_allow_html=True)
+
 
 st.markdown("---")
 
 # =========================================================
-# CHARGEMENT DU FICHIER LOCAL
+# CHARGEMENT DES DONNÉES
 # =========================================================
 
-PATH_GAMES_CLEAN = "data/games_clean.csv"
+PATH = "data/games_clean.csv"
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv(PATH_GAMES_CLEAN)
+    df = pd.read_csv(PATH)
 
-    # Sécurité
     if "Total_reviews" not in df.columns:
         df["Total_reviews"] = df["Positive"] + df["Negative"]
 
@@ -40,200 +82,222 @@ def load_data():
     return df[df["Release_year"].between(2014, 2024)]
 
 df = load_data()
+
 # =========================================================
-# INTRO
+# INTRODUCTION — PROBLÉMATIQUE
 # =========================================================
-st.subheader(" Problématique étudiée")
+st.subheader("Problématique étudiée")
 
 st.markdown("""
-### « Quels sont les facteurs qui déterminent le succès d’un jeu sur Steam, et comment ces éléments permettent-ils d’identifier les genres les plus prometteurs entre 2014 et 2024 ? »
+<div class="block">
+<strong>« Quels sont les facteurs qui déterminent le succès d’un jeu sur Steam, 
+et comment ces éléments permettent-ils d’identifier les genres les plus prometteurs ? »</strong>
 
-Cette page relie et synthétise les résultats issus des trois analyses précédentes :
-1. **Marché global (2014–2024)**  
-2. **Jeux populaires & Facteurs de succès**  
-3. **Genres & Stratégies**  
-4. **Moteur de recommandation**
+Cette page synthétise l’ensemble des résultats produits dans les sections précédentes :  
+• marché global  
+• analyse des jeux populaires  
+• analyse stratégique des genres  
+• moteur de recommandation  
 
-L'objectif est de dégager une réponse claire et argumentée.
-""")
+L’objectif est d’apporter une réponse claire, argumentée et structurée.
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown("---")
 
 # =========================================================
-# SECTION 1 — FACTEURS DE SUCCÈS
+# 1. CE QUI FAIT LE SUCCÈS D’UN JEU — POPULARITÉ × QUALITÉ
 # =========================================================
-st.header(" Ce qui fait le succès d’un jeu sur Steam")
+st.markdown("<div class='section-title'>1. Popularité et Qualité : le cœur du succès</div>", unsafe_allow_html=True)
 
-col1, col2 = st.columns([1.4, 1])
+col1, col2 = st.columns([1.2, 1])
 
 with col1:
     st.markdown("""
-Les analyses de la page **« Jeux populaires »** ont permis d’identifier plusieurs 
-leviers déterminants du succès :
+<div class="block">
+Les deux indicateurs les plus déterminants du succès sur Steam sont :
 
-### ✔ 1. **La popularité mesurée par les avis**
-Plus un jeu cumule d’avis, plus il bénéficie :
-- d’une visibilité forte dans l’algorithme Steam  
-- d’un effet boule de neige lié aux communautés
+### • La **popularité** (nombre total d’avis)
+Plus un jeu accumule d’avis, plus il gagne :  
+– de la visibilité algorithmique,  
+– de la crédibilité auprès des joueurs,  
+– un effet boule-de-neige communautaire.
 
-### ✔ 2. **La qualité perçue (ratio d’avis positifs)**
-Un ratio élevé (> 85%) favorise :
-- la recommandation automatique  
-- la longévité du jeu  
-- les achats impulsifs
+### • La **qualité perçue** (ratio d’avis positifs)
+Un ratio > 85 % augmente fortement :  
+– la recommandation automatique,  
+– la fidélisation,  
+– la durée de vie commerciale du jeu.
 
-### ✔ 3. **L'année de sortie et la tendance du marché**
-Certaines périodes (2016–2020) ont vu exploser :
-- les Battle Royale  
-- les action-open world  
-- les FPS tactiques  
-
-### ✔ 4. **La stratégie de prix**
-Le marché 2014–2024 se caractérise par :
-- une **explosion des free-to-play**  
-- une baisse générale des prix moyens  
-→ favoriser l'adoption rapide et le volume
-
-### ✔ 5. **L’appartenance à un genre porteur**
-Certains genres structurent mieux la communauté que d'autres (RPG, Simulation…).
-
-En combinant ces éléments, on comprend mieux pourquoi certains jeux 
-ont dominé Steam : GTA V, PUBG, Elden Ring, RDR2, etc.
-""")
+Ces deux dimensions expliquent pourquoi des titres comme **GTA V**, **PUBG**,
+**Elden Ring** ou **Red Dead Redemption 2** dominent Steam depuis 10 ans.
+</div>
+""", unsafe_allow_html=True)
 
 with col2:
     fig = px.scatter(
-        df.sample(2000, random_state=42),
+        df.sample(1500, random_state=42),
         x="Total_reviews",
         y="Ratio_Positive",
+        title="Popularité × Qualité (échantillon représentatif)",
         opacity=0.5,
-        title="Popularité vs Qualité (échantillon)",
         template="plotly_dark",
     )
+    fig.update_layout(height=400)
     st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("---")
 
 # =========================================================
-# SECTION 2 — GENRES LES PLUS PROMETTEURS
+# 2. CROISSANCE DES GENRES (2014–2024)
 # =========================================================
-st.header(" Quels genres sont les plus prometteurs ?")
+st.markdown("<div class='section-title'>2. Croissance des genres (2014–2024)</div>", unsafe_allow_html=True)
+
+# Exploser correctement les listes de genres
+genre_rows = df.explode("Genres_list")
+
+# 🔥 FIX DÉFINITIF : supprimer genres vides / listes vides / chaînes vides
+genre_rows = genre_rows[
+    genre_rows["Genres_list"].notna()
+    & (genre_rows["Genres_list"].astype(str).str.strip() != "")
+    & (genre_rows["Genres_list"].astype(str).str.strip() != "[]")
+]
+
+# Compter jeux par genre et année
+genre_year = (
+    genre_rows.groupby(["Release_year", "Genres_list"])["AppID"]
+              .count()
+              .reset_index()
+)
+
+# Top 8 genres
+top_genres = (
+    genre_year.groupby("Genres_list")["AppID"]
+              .sum()
+              .sort_values(ascending=False)
+              .head(8)
+              .index
+)
+
+# Graphique final
+fig_growth = px.line(
+    genre_year[genre_year["Genres_list"].isin(top_genres)],
+    x="Release_year",
+    y="AppID",
+    color="Genres_list",
+    title="Évolution des genres dominants (2014–2024)",
+    template="plotly_dark",
+)
+
+fig_growth.update_layout(
+    height=420,
+    legend_title_text="Genres",
+)
+
+st.plotly_chart(fig_growth, use_container_width=True)
 
 st.markdown("""
-Grâce à la **page « Genres & stratégies »**, il est possible d’évaluer chaque genre selon :
+<div class="block">
+<strong>Enseignement principal</strong>  
+Certains genres explosent sur 10 ans :
 
-- sa **popularité totale**  
-- sa **qualité moyenne**  
-- sa **croissance** (2014 → 2024)  
-- son **positionnement stratégique** (Winner, Émergent, Stable, Risque)
+- RPG / Action-RPG  
+- Simulation / City-builder  
+- FPS tactique  
+- Survival / Crafting  
 
-Voici les enseignements principaux :
-""")
-
-colg1, colg2 = st.columns(2)
-
-with colg1:
-    st.markdown("""
-### Genres **Winner**
-Croissance élevée + excellente qualité  
-→ Exemples :
-- **RPG / Action-RPG**  
-- **Simulation / City-builder**  
-- **Souls-like**  
-- **FPS tactiques**  
-
-Ces genres bénéficient d'un public fidèle et d’une demande constante.
-""")
-
-with colg2:
-    st.markdown("""
-### Genres **Émergents**
-Croissance forte mais qualité encore variable  
-→ Exemples :
-- **Survival / Crafting**  
-- **Rogue-lite**  
-- **Deckbuilding**  
-
-Très porteurs pour des studios indé ou AA.
-""")
-
-colg3, colg4 = st.columns(2)
-
-with colg3:
-    st.markdown("""
-### Genres **Stables et fiables**
-Qualité élevée mais croissance modérée  
-→ Exemples :
-- **Stratégie / 4X**  
-- **Puzzle / Relaxing**  
-
-Public solide, faible volatilité.
-""")
-
-with colg4:
-    st.markdown("""
-### Genres **à risque**
-Faible croissance + qualité moyenne  
-→ Exemples :
-- certains **MMO**  
-- certains **casuals** sursaturés  
-
-Rentabilité incertaine, concurrence forte.
-""")
+→ Ils bénéficient d’une **croissance structurelle**, signe d'une demande durable.
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown("---")
 
 # =========================================================
-# SECTION 3 — SYNTHESE GENERALE
+# 3. CARTE STRATEGIQUE DES GENRES
 # =========================================================
-st.header(" Synthèse générale — Réponse à la problématique")
+st.markdown("<div class='section-title'>3. Positionnement stratégique des genres</div>", unsafe_allow_html=True)
+
+genre_stats = (
+    df.explode("Genres_list")
+      .groupby("Genres_list")
+      .agg({
+          "Total_reviews": "mean",
+          "Ratio_Positive": "mean",
+          "AppID": "count"
+      })
+      .rename(columns={"AppID": "Nb_jeux"})
+      .reset_index()
+)
+
+fig_map = px.scatter(
+    genre_stats,
+    x="Total_reviews",
+    y="Ratio_Positive",
+    size="Nb_jeux",
+    hover_name="Genres_list",
+    title="Carte stratégique : Popularité × Qualité × Volume",
+    template="plotly_dark",
+    color="Ratio_Positive",
+    color_continuous_scale="Plasma"
+)
+fig_map.update_layout(height=450)
+
+st.plotly_chart(fig_map, use_container_width=True)
 
 st.markdown("""
-### ✔ Facteurs déterminants du succès
-Un jeu a tendance à performer sur Steam lorsqu'il combine :
-- **Popularité forte (avis)** → visibilité & crédibilité  
-- **Qualité élevée** → recommandation & fidélisation  
-- **Genre porteur** → attentes claires du public  
+<div class="block">
+<strong>Lecture stratégique :</strong>
+            
+- **Winners** : RPG, Simulation, FPS tactiques  
+- **Émergents** : Survival, Rogue-lite  
+- **Stables** : Stratégie, Puzzle  
+- **À risque** : certains MMO et jeux casual saturés  
+
+→ Ces positions permettent d’identifier les **genres les plus prometteurs** pour les développeurs en 2025.
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("---")
+
+# =========================================================
+# SYNTHESE ORALE — LA RÉPONSE À LA PROBLÉMATIQUE
+# =========================================================
+st.markdown("<div class='section-title'>Synthèse générale — Réponse à la problématique</div>", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="block">
+<strong>Ce qui détermine réellement le succès d’un jeu sur Steam :</strong>
+
+- **Popularité forte** (avis élevés)  
+- **Qualité élevée** (ratio > 85 %)  
+- **Genre porteur** (croissance + communauté active)  
 - **Stratégie de prix cohérente**  
-- **Mises à jour régulières & communauté active**
+- **Mises à jour régulières + communication efficace**
 
-### ✔ Genres les plus prometteurs (2014–2024)
-D’après nos analyses stratégiques :
-- **RPG / Action-RPG**
-- **Open World narratif**
-- **Simulation / City-Builder**
-- **FPS tactiques & extraction shooters**
-- **Rogue-lite & Survivals**
+<strong>Genres les plus prometteurs :</strong>  
+RPG / Action-RPG, Open World, Simulation, FPS tactique, Survival.
 
-### ✔ Conclusion
-Le succès sur Steam repose sur un équilibre entre **qualité**, **popularité**, 
-**communauté**, et **pertinence du genre**.  
-À partir de ces observations, plusieurs genres apparaissent comme les plus **porteurs** 
-pour concevoir un jeu compétitif sur les dix prochaines années.
-""")
+<strong>Conclusion :</strong>  
+Le succès sur Steam repose sur un équilibre entre :  
+– attractivité du genre  
+– qualité de l’expérience  
+– force de la communauté  
+– visibilité algorithmique  
+
+Ces éléments fournissent une base solide pour orienter le développement
+de nouveaux jeux dans les années à venir.
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown("---")
 
 # =========================================================
-# SECTION 4 — OUVERTURE VERS LA PAGE RECOMMANDATION
+# NAVIGATION
 # =========================================================
-st.header(" Mise en pratique : moteur de recommandation")
-
-st.markdown("""
-La page **« Recommandations »** illustre comment ces facteurs permettent 
-de rapprocher les jeux entre eux et d’identifier :
-
-- des jeux similaires,  
-- des alternatives crédibles,
-- un positionnement stratégique cohérent.
-
-C’est la concrétisation pratique de toute l’analyse précédente.
-""")
-
 col1, col2 = st.columns(2)
 
 with col1:
-    st.page_link("pages/04_Genres_et_stratégies.py", label="Retour : Genres & stratégies")
+    st.page_link("pages/04_Genres_et_stratégies.py", label="◀ Retour : Genres & stratégies")
 
 with col2:
-    st.page_link("pages/06_Recommandations.py", label="Page suivante : Recommandations")
+    st.page_link("pages/06_Recommandations.py", label="Page suivante : Recommandations ▶")

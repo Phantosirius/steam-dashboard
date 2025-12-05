@@ -65,10 +65,13 @@ df = load_data()
 # =========================================================
 st.markdown("""
 <div style="text-align:center; padding: 10px 0 25px 0;">
-    <h1>Marché global (2014–2024)</h1>
-    <p style="color:#bbbbbb; font-size:16px;">Comprendre l’évolution du marché Steam sur dix ans</p>
+    <h1 style="color:#3b82f6;">Marché global (2014–2024)</h1>
+    <p style="color:#ffffff; font-size:16px;">
+        Comprendre l’évolution du marché Steam sur dix ans
+    </p>
 </div>
 """, unsafe_allow_html=True)
+
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -209,18 +212,45 @@ st.markdown("<hr>", unsafe_allow_html=True)
 # =========================================================
 # SYNTHÈSE
 # =========================================================
-st.markdown("<div class='section-title'>Synthèse du marché Steam</div>", unsafe_allow_html=True)
+from textwrap import dedent
 
-st.markdown("""
-- Forte explosion du nombre de sorties → concurrence accrue.  
-- Prix globalement bas → domination de l’indie + free-to-play.  
-- Marché très volatil → visibilité plus difficile à obtenir pour les petits studios.  
+html_block = dedent("""
+<div style="
+    background-color:#000;
+    border:2px solid #3b82f6;
+    border-radius:12px;
+    padding:20px 25px;
+    margin:25px 0;
+    color:white;
+    font-size:16px;
+    line-height:1.7;
+">
+
+<div style="font-size:22px; font-weight:600; margin-bottom:10px; color:#ffffff;">
+    Synthèse du marché Steam
+</div>
+
+<ul style="margin-left:20px; list-style-position:outside;">
+    <li>Forte explosion du nombre de sorties → concurrence accrue.</li>
+    <li>Prix globalement bas → domination de l’indie + free-to-play.</li>
+    <li>Marché très volatil → visibilité plus difficile à obtenir pour les petits studios.</li>
+</ul>
+
+</div>
 """)
 
+st.markdown(html_block, unsafe_allow_html=True)
+
+
+st.markdown("---")
+
+# =========================================================
+# NAVIGATION
+# =========================================================
 col1, col2 = st.columns(2)
 
 with col1:
-    st.page_link("pages/01_Page_d'accueil.py", label="Retour : Page d'accueil")
+    st.page_link("pages/01_Page_d'accueil.py", label="◀ Retour : Page d'accueil")
 
 with col2:
-    st.page_link("pages/03_Jeux_populaires.py", label="Page suivante : Jeux populaires")
+    st.page_link("pages/03_Jeux_populaires.py", label="Page suivante : Jeux populaire ▶")

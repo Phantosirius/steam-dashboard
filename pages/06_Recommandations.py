@@ -16,10 +16,11 @@ st.set_page_config(
 
 st.markdown("""
 <div style="text-align:center; padding: 10px 0 20px 0;">
-    <h1 style="color:#9b59b6;">Recommandations de jeux</h1>
-    <h3 style="color:#bdc3c7;">Sélectionnez un jeu et découvrez des titres proches dans la même famille</h3>
+    <h1 style="color:#9b7dff;">Recommandations de jeux</h1>
+    <h3 style="color:white;">Sélectionnez un jeu et découvrez des titres proches dans la même famille</h3>
 </div>
 """, unsafe_allow_html=True)
+
 
 st.markdown("---")
 
@@ -333,7 +334,7 @@ st.plotly_chart(fig, use_container_width=True)
 # =========================================================
 # 7. EXPLICATION
 # =========================================================
-
+# 1. Calculs comme avant
 st.subheader("Pourquoi ces recommandations ?")
 
 ratio_ref = game_row["Ratio_Positive"] * 100
@@ -342,21 +343,53 @@ avis_ref = int(game_row["Total_reviews"])
 ratio_rec = top5["Ratio_Positive"].mean() * 100
 avis_rec = int(top5["Total_reviews"].mean())
 
-st.markdown(f"""
-Les jeux recommandés appartiennent à la même famille que **{selected_game}** :
-👉 **{cat}**
+from textwrap import dedent
 
-Ils ont été sélectionnés sur la base de :
+# 2. Bloc HTML stylé
+html_block = dedent(f"""
+<div style="
+    background-color:#000;
+    border:2px solid #9b7dff;
+    border-radius:12px;
+    padding:20px 25px;
+    margin:25px 0;
+    color:white;
+    font-size:16px;
+    line-height:1.7;
+">
 
-- **Genres partagés**
-- **Qualité comparable**  
-  - {selected_game} : **{ratio_ref:.1f} %** d'avis positifs  
-  - Recommandations (moyenne) : **{ratio_rec:.1f} %**
-- **Popularité proche**  
-  - {selected_game} : **{avis_ref:,} avis**  
-  - Recommandations (moyenne) : **{avis_rec:,} avis**
+<div style="font-size:20px; font-weight:600; margin-bottom:10px;">
+    Pourquoi ces recommandations ?
+</div>
 
+<p>
+Les jeux recommandés appartiennent à la même famille que <strong>{selected_game}</strong> :
+<strong>{cat}</strong>
+</p>
+
+<p>Ils ont été sélectionnés sur la base de :</p>
+
+<ul style="margin-left:20px; list-style-position:outside;">
+    <li><strong>Genres partagés</strong></li>
+    <li><strong>Qualité comparable</strong><br>
+        - {selected_game} : <strong>{ratio_ref:.1f} %</strong> d'avis positifs<br>
+        - Recommandations (moyenne) : <strong>{ratio_rec:.1f} %</strong>
+    </li>
+    <li><strong>Popularité proche</strong><br>
+        - {selected_game} : <strong>{avis_ref:,} avis</strong><br>
+        - Recommandations (moyenne) : <strong>{avis_rec:,} avis</strong>
+    </li>
+</ul>
+
+<p>
 Le score de similarité combine ces trois dimensions pour proposer des jeux cohérents.
-""".replace(",", " "))
+</p>
 
-st.page_link("pages/05_Synthèse_&_Conclusions.py", label="Page précédente : Synthèse & Conclusion")
+</div>
+""")
+
+st.markdown(html_block.replace(",", " "), unsafe_allow_html=True)
+
+
+st.markdown("---")
+st.page_link("pages/05_Synthèse_&_Conclusions.py", label="◀ Page précédente : Synthèse & Conclusion")

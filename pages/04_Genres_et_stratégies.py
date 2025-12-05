@@ -17,7 +17,7 @@ st.set_page_config(
 # ---------------------------------------------------------
 st.markdown("""
 <div style="text-align:center; padding: 10px 0 20px 0;">
-    <h1 style="color:#9B59B6;">Genres & stratégies</h1>
+    <h1 style="color:#9b7dff;">Genres & stratégies</h1>
     <h3 style="color:#ecf0f1;">Quels genres représentent les meilleures opportunités sur Steam ?</h3>
 </div>
 """, unsafe_allow_html=True)
@@ -334,24 +334,51 @@ st.markdown("---")
 # =========================================================
 # 7. SYNTHÈSE STRATÉGIQUE
 # =========================================================
+from textwrap import dedent
 
-st.header("Synthèse stratégique")
+html_block = dedent("""
+<div style="
+    background-color:#000;
+    border:2px solid #9b7dff;
+    border-radius:12px;
+    padding:20px 25px;
+    margin:25px 0;
+    color:white;
+    font-size:16px;
+    line-height:1.7;
+">
+<div style="font-size:22px; font-weight:600; margin-bottom:10px;">
+    Synthèse stratégique
+</div>
 
-st.markdown("""
-Les analyses montrent des différences marquées entre les genres :
+<p>Les analyses montrent des différences marquées entre les genres :</p>
 
-- Certains genres, comme Action ou Adventure, combinent popularité élevée et bonne qualité.  
-- D'autres genres affichent une forte croissance mais une qualité plus variable : ils représentent des opportunités, mais demandent un positionnement précis.  
-- Les genres très bien notés mais en croissance modérée peuvent constituer un terrain sûr pour un projet avec moins de risque.  
-- Les genres cumulant faible qualité et absence de dynamique doivent être considérés avec prudence.
+<ul style="margin-left:20px; list-style-position:outside;">
+    <li>Certains genres, comme Action ou Adventure, combinent popularité élevée et bonne qualité.</li>
+    <li>D'autres genres affichent une forte croissance mais une qualité plus variable : ils représentent des opportunités, mais demandent un positionnement précis.</li>
+    <li>Les genres très bien notés mais en croissance modérée peuvent constituer un terrain sûr pour un projet avec moins de risque.</li>
+    <li>Les genres cumulant faible qualité et absence de dynamique doivent être considérés avec prudence.</li>
+</ul>
 
+<p style="margin-top:10px;">
 Ces résultats permettent d’orienter le choix d’un genre pour un futur jeu en fonction du positionnement stratégique recherché.
+</p>
+
+</div>
 """)
 
+st.markdown(html_block, unsafe_allow_html=True)
+
+
+st.markdown("---")
+
+# =========================================================
+# NAVIGATION
+# =========================================================
 col1, col2 = st.columns(2)
 
 with col1:
-    st.page_link("pages/03_Jeux_populaires.py", label="Retour : Jeux Populaires")
+    st.page_link("pages/03_Jeux_populaires.py", label="◀ Retour : Jeux Populaires")
 
 with col2:
-    st.page_link("pages/05_Synthèse_&_Conclusions.py", label="Page suivante : Synthèse & Conclusions")
+    st.page_link("pages/05_Synthèse_&_Conclusions.py", label="Page suivante : Synthèse & Conclusions ▶")

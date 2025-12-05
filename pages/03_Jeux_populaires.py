@@ -39,8 +39,8 @@ h1 {
 # ---------------------------------------------------------
 st.markdown("""
 <div style="text-align:center; padding: 10px 0 15px 0;">
-    <h1>Jeux populaires</h1>
-    <h3 style="color:#ffffff;">Analyse des jeux les plus influents sur Steam (2014–2024)</h3>
+    <h1 style="color:#9b7dff;">Jeux populaires</h1>
+    <h3 style="color:white;">Analyse des jeux les plus influents sur Steam (2014–2024)</h3>
 </div>
 """, unsafe_allow_html=True)
 
@@ -81,7 +81,7 @@ df_filtered = df_unique[df_unique["Total_reviews"] >= 20000]
 # ---------------------------------------------------------
 # TOP 20 — JEU POPULAIRES
 # ---------------------------------------------------------
-st.markdown("<div class='section-title' style='color:#bbbbbb;'>Top 20 – Jeux les plus populaires</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title' style='color:#ffffff;'>Top 20 – Jeux les plus populaires</div>", unsafe_allow_html=True)
 
 top20 = df_unique.sort_values("Total_reviews", ascending=False).head(20)
 
@@ -118,7 +118,7 @@ st.markdown("<hr>", unsafe_allow_html=True)
 # SECTION INTERACTIVE : 2D & 3D
 # ---------------------------------------------------------
 st.markdown(
-    "<div class='section-title' style='color:#bbbbbb;'>Popularité × Qualité — Analyses interactives</div>",
+    "<div class='section-title' style='color:#ffffff;'>Popularité × Qualité — Analyses interactives</div>",
     unsafe_allow_html=True
 )
 
@@ -182,32 +182,58 @@ with tab2:
 # ---------------------------------------------------------
 # SYNTHÈSE
 # ---------------------------------------------------------
-st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("""
+<style>
+pre, code {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 st.markdown(
-    "<div class='section-title' style='color:#ffffff;'>Synthèse</div>",
+    """
+    <div style="
+        background-color:#000;
+        border:2px solid #9b7dff;
+        border-radius:12px;
+        padding:20px 25px;
+        margin:20px 0;
+        color:white;
+        font-size:16px;
+        line-height:1.7;
+    ">
+
+    <div style="font-size:22px; font-weight:600; margin-bottom:10px;">
+        Synthèse
+    </div>
+
+    <ul style="margin-left:20px; list-style-position:outside;">
+        <li>Les jeux les plus populaires sont dominés par les grands AAA (PUBG, GTA V).</li>
+        <li>Plusieurs jeux massivement joués obtiennent pourtant des scores de qualité moyens.</li>
+        <li>Certains jeux plus modestes affichent d’excellentes évaluations malgré une faible visibilité.</li>
+        <li>L’analyse croisée 2D/3D met en lumière des comportements différents selon les générations de sortie.</li>
+        <li>Cette page constitue un lien direct avec l’étude stratégique des genres.</li>
+    </ul>
+
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
-st.markdown("""
-<ul style="
-    margin-top:10px;
-    font-size:16px;
-    line-height:1.7;
-    color:#ffffff;
-">
-    <li>Les jeux les plus populaires sont dominés par les grands AAA (PUBG, GTA V).</li>
-    <li>Plusieurs jeux massivement joués obtiennent pourtant des scores de qualité moyens.</li>
-    <li>Certains jeux plus modestes affichent d’excellentes évaluations malgré une faible visibilité.</li>
-    <li>L’analyse croisée 2D/3D met en lumière des comportements différents selon les générations de sortie.</li>
-    <li>Cette page constitue un lien direct avec l’étude stratégique des genres.</li>
-</ul>
-""", unsafe_allow_html=True)
 
+
+st.markdown("---")
+
+# =========================================================
+# NAVIGATION
+# =========================================================
 col1, col2 = st.columns(2)
 
 with col1:
-    st.page_link("pages/02_Marché_global.py", label="Retour : Marché global")
+    st.page_link("pages/02_Marché_global.py", label="◀ Retour : Marché global")
 
 with col2:
-    st.page_link("pages/04_Genres_et_stratégies.py", label="Page suivante : Genres & Stratégies")
+    st.page_link("pages/04_Genres_et_stratégies.py", label="Page suivante : Genres & Stratégies ▶")

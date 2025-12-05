@@ -93,11 +93,17 @@ def preview_dataset_github(url):
 # =========================================================
 # TITRE
 # =========================================================
-st.title("Analyse du marché Steam (2014–2024)")
+st.markdown("""
+<div style="text-align:center;">
+    <h1 style="color:#9b7dff;">Analyse du marché Steam (2014–2024)</h1>
+</div>
+""", unsafe_allow_html=True)
 st.markdown(
-    "<p class='small-note'>Étude interactive du marché vidéoludique sur dix années d’évolution.</p>",
+    "<p class='small-note' style='color:white; text-align:center;'>Étude interactive du marché vidéoludique sur dix années d’évolution.</p>",
     unsafe_allow_html=True
 )
+
+
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -121,20 +127,47 @@ st.markdown("<div class='section-title'>Datasets utilisés</div>", unsafe_allow_
 
 st.markdown("""
 <div class="block">
-L’application repose sur les données du dataset Kaggle :  
+L’application repose sur le dataset Kaggle suivant :  
 <a class='link' href="https://www.kaggle.com/datasets/fronkongames/steam-games-dataset/data">
 Steam Games Dataset
 </a>
 
 <br><br>
-Les étapes de transformation expliquent le passage :
-<ul>
-<li>du dataset brut (<code>games.csv</code>)</li>
-<li>au dataset corrigé (<code>games_fixed.csv</code>)</li>
-<li>au dataset final utilisé (<code>games_clean.csv</code>)</li>
-</ul>
+
+Ce projet utilise trois versions successives du fichier, correspondant aux étapes du pipeline de préparation :
+
+### 1. <code>games.csv</code> — Dataset brut  
+Données initiales, contenant :  
+• beaucoup de valeurs manquantes  
+• des champs mal formés (dates, listes, booléens…)  
+• des doublons et des jeux NSFW  
+• des colonnes inutiles pour l'analyse (assets, descriptions HTML, screenshots…)
+
+### 2. <code>games_fixed.csv</code> — Dataset corrigé  
+Première normalisation :  
+• conversion des dates et extraction de l’année  
+• harmonisation des champs textuels  
+• conversion numérique des variables (Price, Positive, Negative…)  
+• suppression des doublons  
+• correction partielle de la colonne Genres
+
+### 3. <code>games_clean.csv</code> — Dataset final optimisé  
+Préparation pour l’analyse :  
+• suppression définitive de toutes les colonnes inutiles pour la DataViz  
+• parsing propre des genres → création de <code>Genres_list</code>  
+• ajout de variables dérivées :  
+  – <code>Total_reviews</code>  
+  – <code>Ratio_Positive</code>  
+• filtrage strict :  
+  – exclusion des jeux NSFW  
+  – exclusion des jeux avec < 50 avis  
+  – exclusion des titres trop rares ou avec genres aberrants  
+• réduction du poids → fichier final léger et adapté à Streamlit  
+
+Ce dernier fichier est celui utilisé dans toute l'application.
 </div>
 """, unsafe_allow_html=True)
+
 
 
 # =========================================================
@@ -208,42 +241,108 @@ with st.expander("Description des colonnes"):
 st.markdown("<hr>", unsafe_allow_html=True)
 
 
+
 # =========================================================
 # Navigation interne
 # =========================================================
 st.markdown("<div class='section-title'>Contenu de l'application</div>", unsafe_allow_html=True)
 
+# CSS pour les cartes interactives
+st.markdown("""
+<style>
+.nav-card {
+    background: linear-gradient(135deg, #1a1a24, #11111a);
+    border: 1px solid #3b3486;
+    padding: 18px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+    transition: 0.25s;
+    cursor: pointer;
+}
+.nav-card:hover {
+    background: linear-gradient(135deg, #2d2659, #1c1c29);
+    border-color: #7b6dff;
+    transform: translateY(-4px);
+}
+.nav-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #9b7dff;
+}
+.nav-desc {
+    font-size: 14px;
+    color: #cccccc;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 colA, colB = st.columns(2)
 
 with colA:
-    st.markdown("""
-<div class='block'>
-<strong>Marché global</strong><br>
-Analyse des sorties annuelles et dynamique globale du marché.
-</div>
+    # Marché global
+    if st.container().markdown(
+        "<div class='nav-card' id='nav1'>"
+        "<div class='nav-title'>Marché global</div>"
+        "<div class='nav-desc'>Analyse des sorties annuelles et dynamique du marché.</div>"
+        "</div>",
+        unsafe_allow_html=True
+    ):
+        pass
 
-<div class='block'>
-<strong>Jeux populaires</strong><br>
-Identification des leaders du marché selon les avis.
-</div>
-""", unsafe_allow_html=True)
+    if st.button("Aller à la page Marché global", key="go_global"):
+        st.switch_page("pages/02_Marché_global.py")
+
+    # Jeux populaires
+    if st.container().markdown(
+        "<div class='nav-card'>"
+        "<div class='nav-title'>Jeux populaires</div>"
+        "<div class='nav-desc'>Identification des leaders du marché selon les avis.</div>"
+        "</div>",
+        unsafe_allow_html=True
+    ):
+        pass
+
+    if st.button("Aller à la page Jeux populaires", key="go_pop"):
+        st.switch_page("pages/03_Jeux_populaires.py")
+
 
 with colB:
-    st.markdown("""
-<div class='block'>
-<strong>Genres & stratégie</strong><br>
-Analyse croisée (qualité × popularité × croissance).
-</div>
+    # Genres & stratégie
+    if st.container().markdown(
+        "<div class='nav-card'>"
+        "<div class='nav-title'>Genres & stratégie</div>"
+        "<div class='nav-desc'>Analyse croisée : qualité × popularité × croissance.</div>"
+        "</div>",
+        unsafe_allow_html=True
+    ):
+        pass
 
-<div class='block'>
-<strong>Recommandations finales</strong><br>
-Synthèse stratégique complète.
-</div>
-""", unsafe_allow_html=True)
+    if st.button("Aller à la page Genres & Stratégies", key="go_gen"):
+        st.switch_page("pages/04_Genres_et_stratégies.py")
+
+    # Recommandations
+    if st.container().markdown(
+        "<div class='nav-card'>"
+        "<div class='nav-title'>Recommandations finales</div>"
+        "<div class='nav-desc'>Synthèse stratégique + moteur de recommandations.</div>"
+        "</div>",
+        unsafe_allow_html=True
+    ):
+        pass
+
+    if st.button("Aller à la page Recommandations", key="go_rec"):
+        st.switch_page("pages/06_Recommandations.py")
 
 # --------------------------------------
 # Footer
 # --------------------------------------
 st.markdown("<div class='footer'>Analyse du marché Steam (2014–2024)</div>", unsafe_allow_html=True)
 
-st.page_link("pages/02_Marché_global.py", label="Page suivante : Marché global")
+st.markdown("---")
+
+# =========================================================
+# NAVIGATION
+# =========================================================
+
+st.page_link("pages/02_Marché_global.py", label="Page suivante : Marché global  ▶")
